@@ -11,7 +11,6 @@
 		E011837C22596AE300CE02D3 /* fast1param3.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = fast1param3.py; sourceTree = "<group>"; };
 		E076956B224AA5AA00371C30 /* reg.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = reg.py; sourceTree = "<group>"; };
 		E076956C224AA5AA00371C30 /* 1param.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = 1param.py; sourceTree = "<group>"; };
-		E076956D224AA5AA00371C30 /* cars.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = cars.csv; sourceTree = "<group>"; };
 		E076956E224AA5B200371C30 /* saved_models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = saved_models; sourceTree = "<group>"; };
 		E076956F224AA5B200371C30 /* myfirstnet.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = myfirstnet.py; sourceTree = "<group>"; };
 		E0769570224AA5B200371C30 /* fast1param.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = fast1param.py; sourceTree = "<group>"; };
@@ -24,7 +23,6 @@
 			children = (
 				E0117C5F225CB126008AF008 /* brudnopis.py */,
 				E076956C224AA5AA00371C30 /* 1param.py */,
-				E076956D224AA5AA00371C30 /* cars.csv */,
 				E0769571224AA5B200371C30 /* convertToCoreML.py */,
 				E0769570224AA5B200371C30 /* fast1param.py */,
 				E076956F224AA5B200371C30 /* myfirstnet.py */,
