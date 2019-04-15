@@ -60,7 +60,7 @@ def loadPhotosInCategory(directory, className, i):
             # prepare the image for the VGG model
             image = preprocess_input(image)
             classNameInt = int(className)
-            label = np.array([((classNameInt+30)%100)/100.0, (classNameInt//1000)/100.0]).astype(float)
+            label = np.array([((((classNameInt+30)%100)/100.0)*2.0)-1.0, (((classNameInt//1000)/100.0)*2.0)-1.0]).astype(float)
 #            print("label:", className, label*1000.0//10)
             labels[i*100+j] = label
             images[i*100+j] = image
@@ -135,8 +135,8 @@ def load_photos(directory):
     return images
 
 # load images
-directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGC/train'
-directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGC/test'
+directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGCleafs/train'
+directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGCleafs/test'
 #directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/determinism/train'
 #directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/determinism/test'
 #directory = '/Users/jacekkaluzny/Pictures/angles/train'
@@ -159,7 +159,7 @@ epochs = 60
 data_augmentation = False
 num_predictions = 20
 save_dir = os.path.join(os.getcwd(), 'saved_models')
-model_name = 'the_tree_model_b.h5'
+model_name = '2parleafs.h5'
 
 # The data, split between train and test sets:
 
@@ -326,10 +326,10 @@ j = 0
 arrayX = "["
 arrayY = "["
 for classesProbs in classes:
-    trueA = (int(my_y_test[j][0]*100.0)-30.0)/10.0
-    trueB = round(my_y_test[j][1], 2)
-    predA = (int(classesProbs[0]*100.0)-30.0)/10.0
-    predB = round(classesProbs[1], 2)
+    trueA = (int((my_y_test[j][0]+1.0)*50.0)-30.0)/10.0
+    trueB = round((my_y_test[j][1]+1.0)*0.5, 2)
+    predA = (int((classesProbs[0]+1.0)*50.0)-30.0)/10.0
+    predB = round((classesProbs[1]+1.0)*0.5, 2)
     print(classesProbs)
     print("\ttrue:\t", trueA, trueB, "\tprediction:\t", predA, predB, "\t = ", (abs(trueA - predA)*1000.0//10)/100.0, (abs(trueB - predB)*1000.0//10)/100.0, "file: ", int(100+trueA*10) + 1000 * int(trueB * 100))
     arrayX += str(predA)+", "
