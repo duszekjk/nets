@@ -7,6 +7,8 @@ import time
 os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
 import settings
+settings.init()
+
 
 import keras
 import keras.applications as kapp
@@ -20,6 +22,8 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten, Lambda, Reshape
 from keras.layers import Conv2D, MaxPooling2D, MaxPooling1D, serialize
 from keras.utils import plot_model
+from keras.models import load_model
+from keras.callbacks import ModelCheckpoint
 from keras import regularizers
 from keras import losses
 from keras.layers.advanced_activations import LeakyReLU
@@ -42,8 +46,6 @@ from operator import add
 from PIL import Image
 #import keyboard  # using module keyboard
 from getkey import getkey, keys
-
-settings.init()
 
 labelsb = dict()
 labels = dict()
@@ -148,10 +150,10 @@ def loadPhotosNamesInCategory(directory, className, i):
             filename = directory + '/' + className + '/' + name
             classNameInt = int(className)
 #            label = np.array([((classNameInt+30)%100)/100.0, ((((classNameInt)%1000000)//1000)/100.0)-1.0]).astype(float) #, (classNameInt//1000000)/1000.0]).astype(float)
-
+#            label = className
             label = np.array([((classNameInt+30)%100)/100.0, (classNameInt//1000)/100.0]).astype(float)
             label = (label*2.0) - 1.0
-            labelsb[i*1000+j] = (((classNameInt//1000000)/1000.0)*2) - 1.0
+            labelsb[i*1000+j] =  label #(((classNameInt//1000000)/1000.0)*2) - 1.0
             labels[i*1000+j] = label
             images[i*1000+j] = filename
             j += 1
@@ -207,31 +209,7 @@ def load_photos(directory, names = False):
 
 
 analisedData = None
-def analiseImages(epochNumber, batchData, batchCounter, this_batch_size):
-    global labels
-    global labelsb
-    global imagesChunks
-#    global settings.model
-    global epochs
-    global batch_size
-    global analisedData
 
-    analisedData = None
-#    labels.clear()
-    print("\nimages ", str(((batchCounter*10000)//this_batch_size)/100.0))
-    imagesLoaded = loadIMGS(batchData)
-    (x_train, y_train) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesLoaded.keys())])
-    x_train = x_train.astype('float32')
-    x_train /= 255.0
-#    print(y_train[0])
-    if not data_augmentation:
-        print('Not using data augmentation.')
-        history = settings.model.fit(x_train, y_train, epochs=epochNumber*3, batch_size=batch_size,  verbose=1, validation_split=0.2, initial_epoch = 3*(epochNumber-1))
-        analisedData = history
-        return history
-    else:
-        print('Using real-time data augmentation is imposible for this problem')
-        # This will do preprocessing and realtime data augmentation:
 
 def breakTraining():
     while settings.stopTraining != True:  # making a loop
@@ -270,77 +248,101 @@ validation_generator = DataGenerator(imagesTest, labels)
 if not os.path.isdir(settings.save_dir):
     os.makedirs(settings.save_dir)
 model_path = os.path.join(settings.save_dir, settings.model_name)
-keras.callbacks.ModelCheckpoint(model_path, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+#keras.callbacks.ModelCheckpoint(model_path, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
-settings.model = Sequential()
 
-settings.model.add(Conv2D(32, (5, 5), padding='same',
-                 input_shape=(512, 512, 3), kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-settings.model.add(Activation('LeakyReLU'))
-settings.model.add(Dropout(0.05))
-#settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-
-settings.model.add(Conv2D(32, (5, 5), padding='same'))
-settings.model.add(Activation('relu'))
-settings.model.add(Conv2D(32, (5, 5)))
-settings.model.add(Activation('LeakyReLU'))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-settings.model.add(Dropout(0.01))
-
-settings.model.add(Conv2D(64, (7, 7), padding='same'))
-settings.model.add(Activation('relu'))
-settings.model.add(Conv2D(64, (7, 7)))
-settings.model.add(Activation('relu'))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-settings.model.add(Dropout(0.001))
-
-settings.model.add(Conv2D(64, (5, 5), padding='same'))
-settings.model.add(Activation('relu'))
-settings.model.add(Conv2D(64, (5, 5)))
-settings.model.add(Activation('relu'))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-settings.model.add(Dropout(0.001))
-
-settings.model.add(Conv2D(128, (5, 5), padding='same'))
-settings.model.add(Activation('relu'))
-settings.model.add(Conv2D(128, (5, 5)))
-settings.model.add(Activation('relu'))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-settings.model.add(Dropout(0.01))
-
-settings.model.add(Conv2D(256, (5, 5), padding='same', kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-settings.model.add(Activation('relu'))
-settings.model.add(Conv2D(256, (5, 5), kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-settings.model.add(Activation('relu'))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-settings.model.add(Dropout(0.05))
-
-settings.model.add(Flatten())
-#settings.model.add(Dense(1024, kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5)))
-#settings.model.add(Activation('tanh'))
-
-settings.model.add(Dense(2, activation='tanh', kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-settings.model.add(Dropout(0.0005))
-
-# initiate RMSprop optimizer
-#opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
-opt = keras.optimizers.rmsprop(lr=0.00008, decay=1e-6)
-settings.model.summary()
-
-# Let's train the settings.model using RMSprop
-settings.model.compile(loss='mean_squared_error',
-              optimizer=opt,
-              metrics=['mean_squared_error', 'mean_absolute_error'])
-
+epoch_start = 0
 if not os.path.isdir(settings.save_dir):
     os.makedirs(settings.save_dir)
 model_path = os.path.join(settings.save_dir, settings.model_name)
 if isfile(model_path):
     try:
-        settings.model.load(model_path)
+#        del settings.model
+#        newModel = load_model(model_path)
+#        settings.model = newModel
+
+        settings.model.load_weights("weights.best.hdf5")
         print("model loaded")
     except:
-        print("error loading settings.model")
+        print("error loading model")
+else:
+
+    settings.model = Sequential()
+
+    settings.model.add(Conv2D(16, (3, 3), padding='same',
+                     input_shape=(512, 512, 3), kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
+        
+#    settings.model.add(AvgPooling2D(pool_size=(2, 2)))
+    settings.model.add(LeakyReLU(alpha=0.1))
+    settings.model.add(Dropout(0.05))
+    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    settings.model.add(Conv2D(16, (3, 3), padding='same'))
+    settings.model.add(LeakyReLU(alpha=0.001))
+    settings.model.add(Conv2D(16, (3, 3)))
+    settings.model.add(LeakyReLU(alpha=0.010))
+    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+    settings.model.add(Dropout(0.01))
+    
+    settings.model.add(Conv2D(32, (3, 3), padding='same'))
+    settings.model.add(LeakyReLU(alpha=0.001))
+    settings.model.add(Conv2D(32, (3, 3)))
+    settings.model.add(LeakyReLU(alpha=0.010))
+    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+    settings.model.add(Dropout(0.01))
+
+    settings.model.add(Conv2D(64, (3, 3), padding='same'))
+    settings.model.add(LeakyReLU(alpha=0.1))
+    settings.model.add(Conv2D(64, (3, 3)))
+    settings.model.add(LeakyReLU(alpha=0.1))
+    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+    settings.model.add(Dropout(0.001))
+#
+#    settings.model.add(Conv2D(64, (5, 5), padding='same'))
+#    settings.model.add(LeakyReLU(alpha=0.1))
+#    settings.model.add(Conv2D(64, (5, 5)))
+#    settings.model.add(LeakyReLU(alpha=0.1))
+#    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+#    settings.model.add(Dropout(0.0001))
+
+#    settings.model.add(Conv2D(128, (5, 5), padding='same'))
+#    settings.model.add(LeakyReLU(alpha=0.1))
+#    settings.model.add(Conv2D(128, (5, 5)))
+#    settings.model.add(LeakyReLU(alpha=0.1))
+#    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+#    settings.model.add(Dropout(0.001))
+
+#    settings.model.add(Conv2D(256, (5, 5), padding='same'))
+#    settings.model.add(LeakyReLU(alpha=0.1))
+#    settings.model.add(Conv2D(256, (5, 5)))
+#    settings.model.add(LeakyReLU(alpha=0.1))
+#    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+#    settings.model.add(Dropout(0.05))
+
+    settings.model.add(Flatten())
+
+    settings.model.add(Dense(2, kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
+    settings.model.add(Activation('softmax'))
+    settings.model.add(Dropout(0.0005))
+    settings.model.summary()
+
+    # initiate RMSprop optimizer
+    #opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
+    opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
+    # Let's train the settings.model using RMSprop
+#    epoch_start = 0
+#    settings.model.load_weights(settings.save_dir+"/weights-improvement-02-0.21.hdf5")
+#    settings.model.compile(loss='mean_squared_error',
+#                  optimizer=opt,
+#                  metrics=['mean_squared_error', 'mean_absolute_error'])
+
+
+    settings.model.compile(loss='mean_squared_error',
+              optimizer=opt,
+              metrics=['mean_squared_error', 'mean_absolute_error'])
+filepath=settings.save_dir+"/weights-improvement-{epoch:02d}-{mean_squared_error:.2f}.hdf5"
+checkpoint = ModelCheckpoint(filepath, monitor='val_mean_squared_error', verbose=1, save_best_only=True, mode='min')
+callbacks_list = [checkpoint]
 historyAvg = []
 if isfile(model_path+".json"):
     try:
@@ -351,13 +353,19 @@ if isfile(model_path+".json"):
 
 History = settings.model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
-                    use_multiprocessing=True,
-                    workers=4, epochs=settings.epochs, initial_epoch = len(historyAvg))
+                    use_multiprocessing=False,
+                    workers=1, epochs=settings.epochs, callbacks=callbacks_list, initial_epoch = epoch_start)
 
 settings.model.save(model_path)
 with open(model_path+".json", 'w') as fp:
     json.dump(History.history, fp)
 print(History.history.keys())
+#plt.plot(History.history['accuracy'])
+#plt.title('accuracy')
+#plt.ylabel('accuracy')
+#plt.xlabel('epoch')
+#plt.legend(['train'], loc='upper left')
+#plt.show()
 plt.plot(History.history['mean_squared_error'])
 plt.title('model loss')
 plt.ylabel('mean squared error')
@@ -373,126 +381,13 @@ plt.legend(['train + test'], loc='upper left')
 plt.show()
 plt.savefig("plotB.png")
 
-#history = None
-#historyAvg = dict()
-#
-#
-#historyAvg['mean_squared_error'] = []
-#historyAvg['val_mean_squared_error'] = []
-#historyAvg['mean_absolute_error'] = []
-#historyAvg['val_mean_absolute_error'] = []
-#if not os.path.isdir(save_dir):
-#    os.makedirs(save_dir)
-#model_path = os.path.join(save_dir, settings.model_name)
-
-#
-#if isfile(settings.model_path+".json"):
-#    try:
-#        with open(settings.model_path+".json", 'r') as fp:
-#            historyAvg = json.load(fp)
-#    except:
-#        print("error loading history")
-#
-#imagesCombinerE = dict()
-#imagesE = dict()
-#for epochNumber in range(len(historyAvg['mean_squared_error'])+1, epochs+1):
-#    os.system("caffeinate -u -t 36000 &")
-#    print("\nEpoch ", str(epochNumber)+"/"+str(epochs))
-##    batchCounter = 1
-#    historyPart = dict()
-#    historyPart['mean_squared_error'] = 0.0
-#    historyPart['val_mean_squared_error'] = 0.0
-#    historyPart['mean_absolute_error'] = 0.0
-#    historyPart['val_mean_absolute_error'] = 0.0
-#    if stopTraining == True:
-#        break
-#    this_batch_size = min(((epochNumber+20)//20)*((epochNumber+20)//20)*((epochNumber+10)//10)*((epochNumber+10)//10)*20, len(imagesChunks))
-#    print(this_batch_size)
-#    imagesCombinerE.clear()
-#    imagesE.clear()
-#    imagesCombinerE = dict()
-#    imagesE = dict()
-#    for combinerData in imagesChunks[:this_batch_size]:
-#        imagesCombinerE.update(combinerData)
-#    keys =  list(imagesCombinerE.keys())
-#    random.shuffle(keys)
-#    for key in keys:
-#        imagesE[key] = imagesCombinerE[key]
-#    imagesChunksEpoch = createBatch(imagesE, 1+len(imagesChunks[0]))
-#    for batchData in imagesChunksEpoch[:]:
-#        if stopTraining == True:
-#            break
-#        if shouldShowPlots == True:
-#            showPlots()
-#            shouldShowPlots = False
-#        if history != None:
-#
-#            analisingThread = threading.Thread(target=analiseImages, args=(epochNumber, batchData, batchCounter, this_batch_size))
-#            analisingThreadB = threading.Thread(target=analiseImages, args=(epochNumber, batchData, batchCounter, this_batch_size))
-#            analisingThread.start()
-#            time.sleep(4*60.0)
-#            if analisedData == None:
-#                print("s")
-#                time.sleep(4*15.0)
-#                if analisedData == None:
-#                    print("s")
-#                    time.sleep(4*15.0)
-#                    if analisedData == None:
-#                        print("s+")
-#                        analisingThreadB.start()
-#                        time.sleep(4*95.0)
-#
-##            analisedData = analiseImages(epochNumber, batchData, batchCounter, this_batch_size)
-#            newHistory = analisedData.history
-#
-#history['mean_squared_error'].append(newHistory['mean_squared_error'][0])
-#    history['val_mean_squared_error'].append(newHistory['val_mean_squared_error'][0])
-#    history['mean_absolute_error'].append(newHistory['mean_absolute_error'][0])
-#    history['val_mean_absolute_error'].append(newHistory['val_mean_absolute_error'][0])
-#
-#            historyPart['mean_squared_error'] += newHistory['mean_squared_error'][0]
-#            historyPart['val_mean_squared_error'] += newHistory['val_mean_squared_error'][0]
-#            historyPart['mean_absolute_error'] += newHistory['mean_absolute_error'][0]
-#            historyPart['val_mean_absolute_error'] += newHistory['val_mean_absolute_error'][0]
-##            print(history)
-#        else:
-#            history = analiseImages(epochNumber, batchData, batchCounter, this_batch_size).history
-#        batchCounter += 1
-#
-#    if stopTraining == True:
-#        break
-#    historyAvg['mean_squared_error'].append(1.0*historyPart['mean_squared_error']/batchCounter)
-#    historyAvg['val_mean_squared_error'].append(1.0*historyPart['val_mean_squared_error']/batchCounter)
-#    historyAvg['mean_absolute_error'].append(1.0*historyPart['mean_absolute_error']/batchCounter)
-#    historyAvg['val_mean_absolute_error'].append(1.0*historyPart['val_mean_absolute_error']/batchCounter)
-#    settings.model.save(settings.model_path)
-#    with open(settings.model_path+".json", 'w') as fp:
-#        json.dump(historyAvg, fp)
 
 
 stopTraining = True
 
-#showPlots()
-#
-#
-## Save settings.model and weights
-#if not os.path.isdir(save_dir):
-#    os.makedirs(save_dir)
-#settings.model_path = os.path.join(save_dir, settings.model_name)
-#try:
-#    settings.model.save(settings.model_path)
-#except:
-#    print("error saving settings.model")
-#try:
-#    plot_model(settings.model, to_file=save_dir+'/model.png')
-#except:
-#    print("error saving plot")
-#print('Saved trained settings.model at %s ' % settings.model_path)
-#
-## Score trained settings.model.
-##labels.clear()
+
 imagesLoaded = loadIMGS(imagesTest)
-(x_test, y_test) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesLoaded.keys())]).astype(float)
+(x_test, y_test) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), keras.utils.to_categorical(np.array([labels[x] for x in list(imagesLoaded.keys())]), 4)
 
 x_test = x_test.astype('float32')
 x_test /= 255.0
@@ -512,7 +407,7 @@ my_x_test /= 255.0
 classes = settings.model.predict(my_x_test, batch_size=16)
 j = 0
 
-
+#print(classes)
 if len(classes[0]) == 2:
 
     arrayX = "["

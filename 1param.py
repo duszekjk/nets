@@ -18,6 +18,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
 from keras.layers import Conv2D, MaxPooling2D, MaxPooling1D, serialize
 from keras.utils import plot_model
+from keras.callbacks import ModelCheckpoint
 from keras import losses
 
 from os import listdir
@@ -135,8 +136,8 @@ def load_photos(directory):
     return images
 
 # load images
-directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGCleafs/train'
-directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGCleafs/test'
+directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/leafsPlussm/train'
+directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/leafsPlussm/test'
 #directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/determinism/train'
 #directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/determinism/test'
 #directory = '/Users/jacekkaluzny/Pictures/angles/train'
@@ -153,26 +154,25 @@ images = load_photos(directory)
 #imagesTest = load_photos(testDir)
 print('Loaded Images: %d' % int(len(imagesTrain) + len(imagesTest)))
 
-batch_size = 32
+batch_size = 16
 num_classes = 1000.0#len(listdir(directory))
-epochs = 60
+epochs = 45
 data_augmentation = False
 num_predictions = 20
-save_dir = os.path.join(os.getcwd(), 'saved_models')
-model_name = '2parleafs.h5'
+save_dir = os.path.join('/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/nets/project/firstNets', 'saved_models')
+model_name = '2parleafsPlus.h5'
 
 # The data, split between train and test sets:
 
 
 
 (x_train, y_train) = np.array(list(imagesTrain.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesTrain.keys())]).astype(float)
-(x_test, y_test) = np.array(list(imagesTest.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesTest.keys())]).astype(float)
 
 
 print('x_train shape:', x_train.shape)
 print('y_train shape:', y_train.shape)
 print(x_train.shape[0], 'train samples')
-print(x_test.shape[0], 'test samples')
+#print(x_test.shape[0], 'test samples')
 
 print(y_train)
 
@@ -237,14 +237,15 @@ model.compile(loss=losses.mean_squared_error,
               metrics=['mean_squared_error', 'mean_absolute_error'])
 
 x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
 x_train /= 255.0
-x_test /= 255.0
 
 
+filepath=save_dir+"/weights-improvement-{epoch:02d}-{mean_squared_error:.2f}.hdf5"
+checkpoint = ModelCheckpoint(filepath, monitor='mean_squared_error', verbose=1, save_best_only=True, mode='min')
+callbacks_list = [checkpoint]
 if not data_augmentation:
     print('Not using data augmentation.')
-    history = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,  verbose=1, validation_split=0.2)
+    history = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, callbacks=callbacks_list, verbose=1, validation_split=0.2)
     print(history.history.keys())
     plt.plot(history.history['mean_squared_error'])
     plt.plot(history.history['val_mean_squared_error'])
@@ -311,6 +312,10 @@ model.save(model_path)
 #plot_model(model, to_file=save_dir+'/model.png')
 print('Saved trained model at %s ' % model_path)
 
+(x_test, y_test) = np.array(list(imagesTest.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesTest.keys())]).astype(float)
+
+x_test = x_test.astype('float32')
+x_test /= 255.0
 # Score trained model.
 scores = model.evaluate(x_test, y_test, verbose=1)
 print('Test loss:', scores[0])
