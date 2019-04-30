@@ -23,10 +23,9 @@ def init():
     global historyAvg
     
     
-    batch_size = 32
+    batch_size = 16
     num_classes = 1000.0#len(listdir(directory))
-    imagesNumberInDirectory = 41757
-    epochs = 20
+    epochs = 40
     data_augmentation = False
 
 
@@ -46,7 +45,7 @@ def init():
 #    directory = '/Users/jacekkaluzny/Pictures/fruits/train'
 #    directorytest = '/Users/jacekkaluzny/Pictures/fruits/test'
 
-    model_name = 'leafsPlus.h5'
+    model_name = 'leafsPlusBig.h5'
     model = Sequential()
 
     stopTraining = False
@@ -61,3 +60,48 @@ def init():
     historyAvg['val_mean_squared_error'] = []
     historyAvg['mean_absolute_error'] = []
     historyAvg['val_mean_absolute_error'] = []
+    def showPlots():
+        historyAvg = self.historyAvg
+        print("plots:")
+        plt.plot(list( map(add, historyAvg['mean_squared_error'][3:], historyAvg['val_mean_squared_error'][3:])))
+        plt.title('model loss')
+        plt.ylabel('mean squared error')
+        plt.xlabel('epoch')
+        plt.legend(['train + test'], loc='upper left')
+        plt.show()
+        plt.plot(list( map(add, historyAvg['mean_absolute_error'][3:], historyAvg['val_mean_absolute_error'][3:])))
+        plt.title('model mean absolute error')
+        plt.ylabel('mean absolute error')
+        plt.xlabel('epoch')
+        plt.legend(['train + test'], loc='upper left')
+        plt.show()
+        
+        plt.plot(historyAvg['mean_squared_error'][3:])
+        plt.plot(historyAvg['val_mean_squared_error'][3:])
+        plt.title('model loss')
+        plt.ylabel('mean squared error')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()
+        plt.plot(historyAvg['mean_absolute_error'][3:])
+        plt.plot(historyAvg['val_mean_absolute_error'][3:])
+        plt.title('model mean absolute error')
+        plt.ylabel('mean absolute error')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()
+        
+        plt.plot(history['mean_squared_error'][3:])
+        plt.plot(history['val_mean_squared_error'][3:])
+        plt.title('model loss')
+        plt.ylabel('mean squared error')
+        plt.xlabel('batches')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()
+        plt.plot(history['mean_absolute_error'][3:])
+        plt.plot(history['val_mean_absolute_error'][3:])
+        plt.title('model mean absolute error')
+        plt.ylabel('mean absolute error')
+        plt.xlabel('batches')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()

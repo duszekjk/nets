@@ -222,6 +222,7 @@ def breakTraining():
                     print('\tStopping!\t')
                 if key == 'p':
                     settings.shouldShowPlots = True
+                    settings.showPlots()
                     print('\tPlots comming!\t')
             else:
                 if key != None:
@@ -269,48 +270,45 @@ else:
 
     settings.model = Sequential()
 
-    settings.model.add(Conv2D(16, (3, 3), padding='same',
+    settings.model.add(Conv2D(16, (7, 7), padding='same',
                      input_shape=(512, 512, 3), kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-        
-#    settings.model.add(AvgPooling2D(pool_size=(2, 2)))
     settings.model.add(LeakyReLU(alpha=0.1))
-    settings.model.add(Dropout(0.05))
     settings.model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    settings.model.add(Conv2D(16, (3, 3), padding='same'))
-    settings.model.add(LeakyReLU(alpha=0.001))
-    settings.model.add(Conv2D(16, (3, 3)))
-    settings.model.add(LeakyReLU(alpha=0.010))
+    settings.model.add(Conv2D(16, (5, 5), padding='same'))
+    settings.model.add(LeakyReLU(alpha=0.01))
+    settings.model.add(Conv2D(16, (5, 5)))
+    settings.model.add(LeakyReLU(alpha=0.01))
     settings.model.add(MaxPooling2D(pool_size=(2, 2)))
     settings.model.add(Dropout(0.01))
     
-    settings.model.add(Conv2D(32, (3, 3), padding='same'))
-    settings.model.add(LeakyReLU(alpha=0.001))
-    settings.model.add(Conv2D(32, (3, 3)))
-    settings.model.add(LeakyReLU(alpha=0.010))
+    settings.model.add(Conv2D(32, (7, 7), padding='same'))
+    settings.model.add(LeakyReLU(alpha=0.01))
+    settings.model.add(Conv2D(32, (7, 7)))
+    settings.model.add(LeakyReLU(alpha=0.01))
     settings.model.add(MaxPooling2D(pool_size=(2, 2)))
     settings.model.add(Dropout(0.01))
 
-    settings.model.add(Conv2D(64, (3, 3), padding='same'))
+    settings.model.add(Conv2D(32, (5, 5), padding='same'))
     settings.model.add(LeakyReLU(alpha=0.1))
-    settings.model.add(Conv2D(64, (3, 3)))
+    settings.model.add(Conv2D(32, (5, 5)))
     settings.model.add(LeakyReLU(alpha=0.1))
     settings.model.add(MaxPooling2D(pool_size=(2, 2)))
     settings.model.add(Dropout(0.001))
-#
-#    settings.model.add(Conv2D(64, (5, 5), padding='same'))
-#    settings.model.add(LeakyReLU(alpha=0.1))
-#    settings.model.add(Conv2D(64, (5, 5)))
-#    settings.model.add(LeakyReLU(alpha=0.1))
-#    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-#    settings.model.add(Dropout(0.0001))
 
-#    settings.model.add(Conv2D(128, (5, 5), padding='same'))
-#    settings.model.add(LeakyReLU(alpha=0.1))
-#    settings.model.add(Conv2D(128, (5, 5)))
-#    settings.model.add(LeakyReLU(alpha=0.1))
-#    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-#    settings.model.add(Dropout(0.001))
+    settings.model.add(Conv2D(64, (5, 5), padding='same'))
+    settings.model.add(LeakyReLU(alpha=0.1))
+    settings.model.add(Conv2D(64, (5, 5)))
+    settings.model.add(LeakyReLU(alpha=0.1))
+    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+    settings.model.add(Dropout(0.0001))
+
+    settings.model.add(Conv2D(128, (5, 5), padding='same'))
+    settings.model.add(LeakyReLU(alpha=0.1))
+    settings.model.add(Conv2D(128, (5, 5)))
+    settings.model.add(LeakyReLU(alpha=0.1))
+    settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+    settings.model.add(Dropout(0.001))
 
 #    settings.model.add(Conv2D(256, (5, 5), padding='same'))
 #    settings.model.add(LeakyReLU(alpha=0.1))
@@ -322,13 +320,13 @@ else:
     settings.model.add(Flatten())
 
     settings.model.add(Dense(2, kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-    settings.model.add(Activation('softmax'))
+    settings.model.add(Activation('linear'))
     settings.model.add(Dropout(0.0005))
     settings.model.summary()
 
     # initiate RMSprop optimizer
     #opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
-    opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
+    opt = keras.optimizers.rmsprop(lr=0.00004, decay=1e-6)
     # Let's train the settings.model using RMSprop
 #    epoch_start = 0
 #    settings.model.load_weights(settings.save_dir+"/weights-improvement-02-0.21.hdf5")
@@ -337,11 +335,11 @@ else:
 #                  metrics=['mean_squared_error', 'mean_absolute_error'])
 
 
-    settings.model.compile(loss='mean_squared_error',
+    settings.model.compile(loss=losses.mean_squared_error,
               optimizer=opt,
               metrics=['mean_squared_error', 'mean_absolute_error'])
-filepath=settings.save_dir+"/weights-improvement-{epoch:02d}-{mean_squared_error:.2f}.hdf5"
-checkpoint = ModelCheckpoint(filepath, monitor='val_mean_squared_error', verbose=1, save_best_only=True, mode='min')
+filepath=settings.save_dir+"/weights-improvement-{epoch:02d}-{mean_squared_error:.4f}.hdf5"
+checkpoint = ModelCheckpoint(filepath, monitor='mean_squared_error', verbose=1, save_best_only=True, mode='min')
 callbacks_list = [checkpoint]
 historyAvg = []
 if isfile(model_path+".json"):
@@ -354,18 +352,13 @@ if isfile(model_path+".json"):
 History = settings.model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     use_multiprocessing=False,
-                    workers=1, epochs=settings.epochs, callbacks=callbacks_list, initial_epoch = epoch_start)
+                    workers=1, epochs=settings.epochs, verbose = 2, callbacks=callbacks_list, initial_epoch = epoch_start)
 
 settings.model.save(model_path)
 with open(model_path+".json", 'w') as fp:
     json.dump(History.history, fp)
 print(History.history.keys())
-#plt.plot(History.history['accuracy'])
-#plt.title('accuracy')
-#plt.ylabel('accuracy')
-#plt.xlabel('epoch')
-#plt.legend(['train'], loc='upper left')
-#plt.show()
+
 plt.plot(History.history['mean_squared_error'])
 plt.title('model loss')
 plt.ylabel('mean squared error')

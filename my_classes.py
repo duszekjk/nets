@@ -37,20 +37,13 @@ class DataGenerator(keras.utils.Sequence):
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
+#        print(index)
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-        
-#         Find list of IDs
-#        print(indexes)
         keyList = list(self.list_IDs.keys())
         list_IDs_temp = dict()
         i = 0
         for k in indexes:
             list_IDs_temp[keyList[k]] = self.list_IDs[keyList[k]]
-#            print(list_IDs_temp[keyList[k]], self.labels[keyList[k]] , end=", ")
-#        print("\n--------------------------")
-#        list_IDs_temp = [keyList[k]:self.list_IDs[keyList[k]] for k in indexes]
-#        print([list_IDs_temp.values(), self.labels[list_IDs_temp.keys()]])
-        # Generate data
         X, y = self.__data_generation(list_IDs_temp)
         
         return X, y
@@ -64,7 +57,7 @@ class DataGenerator(keras.utils.Sequence):
             with open(model_path+".json", 'w') as fp:
                 json.dump(settings.historyAvg, fp)
             if(settings.shouldShowPlots == True):
-                showPlots(settings.historyAvg)
+                settings.showPlots()
                 settings.shouldShowPlots = False
         'Updates indexes after each epoch'
         os.system("caffeinate -u -t 36000 &")
@@ -75,41 +68,13 @@ class DataGenerator(keras.utils.Sequence):
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
-#        if settings.saveNow > 1:
-#            model_path = os.path.join(settings.save_dir, settings.model_name)
-#            settings.model.save(model_path)
-#            print("saved")
-#        else:
-#            if not os.path.isdir(settings.save_dir):
-#                os.makedirs(settings.save_dir)
-
-
-
 
     def __data_generation(self, list_IDs_temp):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-        # Initialization
-        
-        #        imagesTrain
-        #        X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        #        y = np.empty((self.batch_size), dtype=int)
-#        print(list_IDs_temp)
         imagesLoaded = self.loadIMGS(list_IDs_temp)
         (x_train, y_train) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([self.labels[x] for x in list(imagesLoaded.keys())])
         
         x_train = x_train.astype('float32')
         x_train /= 255.0
-#        where_are_NaNs = np.isnan(x_train)
-#        x_train[where_are_NaNs] = 0.0
-#        where_are_NaNs = np.isnan(y_train)
-#        y_train[where_are_NaNs] = 0.0
-        # Generate data
-#        for i, ID in enumerate(list_IDs_temp):
-#            # Store sample
-#            X[i,] = np.load('data/' + ID + '.npy')
-#            
-#            # Store class
-#            y[i] = self.labels[ID]
         
         return x_train, y_train
 
@@ -143,47 +108,3 @@ class DataGenerator(keras.utils.Sequence):
         return endList
 
 
-def showPlots(historyAvg):
-    print("plots:")
-    plt.plot(list( map(add, historyAvg['mean_squared_error'][3:], historyAvg['val_mean_squared_error'][3:])))
-    plt.title('model loss')
-    plt.ylabel('mean squared error')
-    plt.xlabel('epoch')
-    plt.legend(['train + test'], loc='upper left')
-    plt.show()
-    plt.plot(list( map(add, historyAvg['mean_absolute_error'][3:], historyAvg['val_mean_absolute_error'][3:])))
-    plt.title('model mean absolute error')
-    plt.ylabel('mean absolute error')
-    plt.xlabel('epoch')
-    plt.legend(['train + test'], loc='upper left')
-    plt.show()
-    
-    plt.plot(historyAvg['mean_squared_error'][3:])
-    plt.plot(historyAvg['val_mean_squared_error'][3:])
-    plt.title('model loss')
-    plt.ylabel('mean squared error')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    plt.plot(historyAvg['mean_absolute_error'][3:])
-    plt.plot(historyAvg['val_mean_absolute_error'][3:])
-    plt.title('model mean absolute error')
-    plt.ylabel('mean absolute error')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    
-    plt.plot(history['mean_squared_error'][3:])
-    plt.plot(history['val_mean_squared_error'][3:])
-    plt.title('model loss')
-    plt.ylabel('mean squared error')
-    plt.xlabel('batches')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    plt.plot(history['mean_absolute_error'][3:])
-    plt.plot(history['val_mean_absolute_error'][3:])
-    plt.title('model mean absolute error')
-    plt.ylabel('mean absolute error')
-    plt.xlabel('batches')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
