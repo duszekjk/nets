@@ -15,6 +15,7 @@ import keras.applications as kapp
 from keras.models import load_model
 from os.path import isfile, join
 import json
+import random
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -38,7 +39,8 @@ class DataGenerator(keras.utils.Sequence):
         'Generate one batch of data'
         # Generate indexes of the batch
 #        print(index)
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        maxIndex = int(np.floor(len(self.list_IDs) / self.batch_size))
+        indexes = self.indexes[(index)*self.batch_size:((index+1))*self.batch_size]
         keyList = list(self.list_IDs.keys())
         list_IDs_temp = dict()
         i = 0
@@ -76,6 +78,7 @@ class DataGenerator(keras.utils.Sequence):
         x_train = x_train.astype('float32')
         x_train /= 255.0
         
+        
         return x_train, y_train
 
 
@@ -86,8 +89,15 @@ class DataGenerator(keras.utils.Sequence):
 #            print(filename, self.labels[name])
             image = load_img(filename, target_size=(512, 512))
             image = img_to_array(image)
+            if(random.getrandbits(1)):
+                image = np.flip(image, 1)
+#            print(image)
             # reshape data for the model
             image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
+#            print(image)
+#            if(random.getrandbits(1)):
+#                np.flip(image, 2)
+#            print(image)
             # prepare the image for the VGG model
             image = preprocess_input(image)
             imagesL[name] = image

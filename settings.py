@@ -21,11 +21,12 @@ def init():
     global shouldShowPlots
     global history
     global historyAvg
+    global labelnr
     
-    
+    labelnr = dict()
     batch_size = 16
-    num_classes = 1000.0#len(listdir(directory))
-    epochs = 40
+    num_classes = 9#len(listdir(directory))
+    epochs = 5
     data_augmentation = False
 
 
@@ -37,15 +38,15 @@ def init():
 
     #directory = '/Users/jacekkaluzny/Pictures/MAAPGX/train'
     #directorytest = '/Users/jacekkaluzny/Pictures/MAAPGX/test'
-    directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/leafsPlussm/train'
-    directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/leafsPlussm/test'
+    directory = '/Volumes/M/magisterka/classes8/data/train'
+    directorytest = '/Volumes/M/magisterka/classes8/data/test'
 
     #directory = '/Users/jacekkaluzny/Pictures/MAAPGX/train'
     #directorytest = '/Users/jacekkaluzny/Pictures/MAAPGX/test'
 #    directory = '/Users/jacekkaluzny/Pictures/fruits/train'
 #    directorytest = '/Users/jacekkaluzny/Pictures/fruits/test'
 
-    model_name = 'leafsPlusBig.h5'
+    model_name = 'regresion8points.h5'
     model = Sequential()
 
     stopTraining = False
@@ -54,8 +55,6 @@ def init():
 
     history = None
     historyAvg = dict()
-
-
     historyAvg['mean_squared_error'] = []
     historyAvg['val_mean_squared_error'] = []
     historyAvg['mean_absolute_error'] = []
