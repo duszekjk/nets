@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from keras.models import Sequential
 import os
 from os import listdir
@@ -14,7 +15,9 @@ def init():
     global save_dir
     global saveNow
     global directory
+    global directorytrain
     global directorytest
+    global directoryval
     global model_name
     global model
     global stopTraining
@@ -25,28 +28,21 @@ def init():
     
     labelnr = dict()
     batch_size = 16
-    num_classes = 9#len(listdir(directory))
-    epochs = 5
+    num_classes = 54#len(listdir(directory))
+    epochs = 30
     data_augmentation = False
 
 
     save_dir = os.path.join('/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/nets/project/firstNets', 'saved_models')
     saveNow = 0
 
-#    directory = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGCsm/train'
-#    directorytest = '/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/zdjecia drzew/APandGCsm/test'
+    directory = '/Users/jacekkaluzny/Pictures/4paramsmay/data'
+    directorytrain = directory+'/train'
+    directorytest = directory+'/test'
+    directoryval = directory+'/val'
+    
 
-    #directory = '/Users/jacekkaluzny/Pictures/MAAPGX/train'
-    #directorytest = '/Users/jacekkaluzny/Pictures/MAAPGX/test'
-    directory = '/Volumes/M/magisterka/classes8/data/train'
-    directorytest = '/Volumes/M/magisterka/classes8/data/test'
-
-    #directory = '/Users/jacekkaluzny/Pictures/MAAPGX/train'
-    #directorytest = '/Users/jacekkaluzny/Pictures/MAAPGX/test'
-#    directory = '/Users/jacekkaluzny/Pictures/fruits/train'
-#    directorytest = '/Users/jacekkaluzny/Pictures/fruits/test'
-
-    model_name = 'regresion8points.h5'
+    model_name = '4paramitertsMayR.h5'
     model = Sequential()
 
     stopTraining = False

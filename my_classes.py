@@ -16,6 +16,7 @@ from keras.models import load_model
 from os.path import isfile, join
 import json
 import random
+from scipy.ndimage.filters import gaussian_filter
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -89,8 +90,10 @@ class DataGenerator(keras.utils.Sequence):
 #            print(filename, self.labels[name])
             image = load_img(filename, target_size=(512, 512))
             image = img_to_array(image)
-            if(random.getrandbits(1)):
-                image = np.flip(image, 1)
+#            if(random.getrandbits(1)):
+#                image = np.flip(image, 1)
+#            if(random.getrandbits(1)):
+#                image = gaussian_filter(image, sigma=(3))
 #            print(image)
             # reshape data for the model
             image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))

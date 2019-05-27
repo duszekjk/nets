@@ -10,10 +10,10 @@
 		E0117C5F225CB126008AF008 /* brudnopis.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = brudnopis.py; sourceTree = "<group>"; };
 		E011837C22596AE300CE02D3 /* fast1param3.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = fast1param3.py; sourceTree = "<group>"; };
 		E027E116228879AF00D1D787 /* regression.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = regression.py; sourceTree = "<group>"; };
+		E05FCC88228CD7080062A646 /* my_classes.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = my_classes.py; sourceTree = "<group>"; };
 		E076956C224AA5AA00371C30 /* 1param.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = 1param.py; sourceTree = "<group>"; };
 		E076956E224AA5B200371C30 /* saved_models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = saved_models; sourceTree = "<group>"; };
 		E0769571224AA5B200371C30 /* convertToCoreML.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = convertToCoreML.py; sourceTree = "<group>"; };
-		E0CA6F1422621BFF00986FF5 /* my_classes.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = my_classes.py; sourceTree = "<group>"; };
 		E0FA2AE2226239CE009A580C /* settings.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = settings.py; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -26,9 +26,9 @@
 				E0769571224AA5B200371C30 /* convertToCoreML.py */,
 				E011837C22596AE300CE02D3 /* fast1param3.py */,
 				E027E116228879AF00D1D787 /* regression.py */,
-				E0CA6F1422621BFF00986FF5 /* my_classes.py */,
 				E0FA2AE2226239CE009A580C /* settings.py */,
 				E076956E224AA5B200371C30 /* saved_models */,
+				E05FCC88228CD7080062A646 /* my_classes.py */,
 			);
 			sourceTree = "<group>";
 		};

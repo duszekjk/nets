@@ -23,7 +23,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten, Lambda, Reshape
 from keras.layers import Conv2D, MaxPooling2D, MaxPooling1D, serialize
 from keras.utils import plot_model
 from keras.models import load_model
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, RemoteMonitor
 from keras import regularizers
 from keras import losses
 from keras.layers.advanced_activations import LeakyReLU
@@ -42,6 +42,7 @@ import threading
 from itertools import islice
 import matplotlib.pyplot as plt
 from operator import add
+import requests
 
 from PIL import Image
 #import keyboard  # using module keyboard
@@ -124,13 +125,13 @@ def createBatch(data, SIZE=1000):
 
 def loadIMGS(paths):
     imagesL = dict()
-    illSum = max(int(len(paths)//140), 1)
+    illSum = max(int(len(paths)//340), 1)
     #    print(illSum, int(len(paths)//100))
     ill = 0
 #    print(np.unique(np.array(paths)))
     for name in paths:
         ill += 1
-        if ill%illSum != 1:
+        if ill%illSum == 1:
             continue
         filename = paths[name]
         print(str(ill/illSum), filename)
@@ -161,7 +162,9 @@ def loadPhotosNamesInCategory(directory, className, i):
             #            label = np.array([((classNameInt+30)%100)/100.0, ((((classNameInt)%1000000)//1000)/100.0)-1.0]).astype(float) #, (classNameInt//1000000)/1000.0]).astype(float)
             label = np.array(className.split("+")).astype(float)
             label[0] = (label[0]*2.0)-1.0
-            label[1] = (label[1]/3.0)
+            label[1] = (label[1]*2.0)-1.0
+            label[2] = (label[2]/3.0)
+            label[3] = (label[3]/100.0)-100.0
 #            print(label)
 #            label =  className#np.array([((classNameInt+30)%100)/100.0, (classNameInt//1000)/100.0]).astype(float)
             #            label = (label*2.0) - 1.0
@@ -198,6 +201,8 @@ def load_photos(directory, names = False):
                 print(className)
                 if names == True:
                     loadPhotosNamesInCategory(directory, className, i)
+#                    loadPhotosNamesInCategory(directory, className, i+1)
+#                    loadPhotosNamesInCategory(directory, className, i+2)
                 else:
                     threads.append(threading.Thread(target=loadPhotosInCategory, args=(directory, className, i)))
         i += 1
@@ -250,13 +255,16 @@ def breakTraining():
 keyboardStop = threading.Thread(target=breakTraining)
 keyboardStop.start()
 
-images = load_photos(settings.directory, names = True)
-(imagesTrain, imagesTest) = chunks(images, int(len(images)*995/1000))
+
+imagesTest = load_photos(settings.directoryval, names = True).copy()
+imagesCombiner.clear()
+imagesTrain = load_photos(settings.directorytrain, names = True).copy()
+#(imagesTrain, imagesTest) = chunks(images, int(len(images)*995/1000))
 imagesChunks =  createBatch(imagesTrain, 4*(int(settings.batch_size*1.25))+1)
 
 
-print('Loaded Images: %d' % int(len(images)))
 
+print('Loaded Images: %d / %d' % (int(len(imagesTrain)), int(len(imagesTest))))
 
 # Generators
 training_generator = DataGenerator(imagesTrain, labels)
@@ -319,7 +327,9 @@ settings.model.add(Dropout(0.0001))
 
 settings.model.add(Flatten())
 
-settings.model.add(Dense(2))
+settings.model.add(Dense(settings.num_classes))
+
+settings.model.add(Dense(4))
 #                             , kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
 settings.model.add(Activation('linear'))
 #    settings.model.add(Dropout(0.0005))
@@ -331,6 +341,7 @@ opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 # Let's train the settings.model using RMSprop
 #    epoch_start = 0
 #settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
+settings.model.load_weights(settings.save_dir+"/"+"4paramitertsMay.h5")
 #    settings.model.compile(loss='mean_squared_error',
 #                  optimizer=opt,
 #                  metrics=['mean_squared_error', 'mean_absolute_error'])
@@ -339,9 +350,10 @@ opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 settings.model.compile(loss='mean_squared_error',
                      optimizer=opt,
                      metrics=['categorical_accuracy', 'mean_squared_error', 'mean_absolute_error', 'accuracy'])
-filepath=settings.save_dir+"/weights-improvement-"+settings.model_name+"-{epoch:02d}-{categorical_accuracy:.4f}.hdf5"
+filepath=settings.save_dir+"/weights-improvement-"+settings.model_name+"-{epoch:02d}-{mean_absolute_error:.4f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='mean_squared_error', verbose=1, save_best_only=True, mode='min')
-callbacks_list = [checkpoint]
+webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
+callbacks_list = [checkpoint, webpage]
 historyAvg = []
 if isfile(model_path+".json"):
     try:
@@ -359,21 +371,29 @@ settings.model.save(model_path)
 with open(model_path+".json", 'w') as fp:
     json.dump(History.history, fp)
 print(History.history.keys())
-
-plt.plot(History.history['categorical_accuracy'])
-plt.title('model loss')
+ids = range(1, len(History.history['categorical_accuracy'])+1)
+plt.plot(ids, History.history['categorical_accuracy'], ids,  History.history['val_categorical_accuracy'])
+plt.title('model categorical_accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
-plt.legend(['train + test'], loc='upper left')
+plt.legend(['train', 'test'], loc='upper left')
 plt.show()
-plt.savefig("plotA.png")
-plt.plot(History.history['mean_absolute_error'])
+plt.savefig(settings.model_name+"_plotA.png")
+plt.plot(ids, History.history['mean_absolute_error'], ids,  History.history['val_mean_absolute_error'])
 plt.title('model mean absolute error')
 plt.ylabel('mean absolute error')
 plt.xlabel('epoch')
-plt.legend(['train + test'], loc='upper left')
+plt.legend(['train', 'test'], loc='upper left')
 plt.show()
-plt.savefig("plotB.png")
+plt.savefig(settings.model_name+"_plotB.png")
+
+plt.plot(ids, History.history['mean_squared_error'], ids,  History.history['val_mean_squared_error'])
+plt.title('model mean squared error')
+plt.ylabel('mean squared error')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+plt.savefig(settings.model_name+"_plotC.png")
 
 
 
@@ -408,6 +428,7 @@ if len(classes[0]) == 2:
     
     arrayX = "["
     arrayY = "["
+    arrayZ = "["
     for classesProbs in classes:
         trueA = (my_y_test[j][0] + 1.0)/2
         trueB = (my_y_test[j][1] ) * 3
@@ -417,12 +438,14 @@ if len(classes[0]) == 2:
         print("\ttrue:\t", trueA, trueB, "\tprediction:\t", predA, predB, "\t = ", ((abs(trueA - predA)*1000000)//1000)/1000, ((abs(trueB - predB)*1000000)//1000)/1000, "file: ", int(100+trueA*10) + 1000 * int(trueB * 100))
         arrayX += str(predA)+", "
         arrayY += str(predB)+", "
+        arrayZ += "\""+str(trueA)+"+"+str(trueB)+"\""+", "
         j += 1
     
     
     #    print(prediction)
-    print(arrayX)
-    print(arrayY)
+    print(arrayX+"]")
+    print(arrayY+"]")
+    print(arrayZ+"]")
 
 else:
     for classesProbs in classes:

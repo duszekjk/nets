@@ -23,7 +23,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten, Lambda, Reshape
 from keras.layers import Conv2D, MaxPooling2D, MaxPooling1D, serialize
 from keras.utils import plot_model
 from keras.models import load_model
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, RemoteMonitor
 from keras import regularizers
 from keras import losses
 from keras.layers.advanced_activations import LeakyReLU
@@ -164,11 +164,12 @@ def loadPhotosNamesInCategory(directory, className, i):
             label = [0]*(settings.num_classes)
             label[settings.labelnr[className]] = 1
             labelsb[settings.labelnr[className]] =  className #(((classNameInt//1000000)/1000.0)*2) - 1.0
-            labels[i*1000+j] = label
-            images[i*1000+j] = filename
+            labels[i*10000000+j] = label
+            images[i*10000000+j] = filename
             j += 1
     #    while i != imagesBlocker:
     #        time.sleep(0.001)
+#    print("+", j)
     imagesCombiner.update(images)
     imagesBlocker += 1
 #    print("class end: \t", className, "\t",len(images))
@@ -179,7 +180,7 @@ def load_photos(directory, names = False):
     global imagesBlocker
     global imagesCombiner
     
-    imagesCombiner.clear()
+#    imagesCombiner.clear()
     threads = []
     images = dict()
     i = 0
@@ -196,6 +197,7 @@ def load_photos(directory, names = False):
                 else:
                     threads.append(threading.Thread(target=loadPhotosInCategory, args=(directory, className, i)))
             i += 1
+    print(i)
     if names != True:
         print("class state: \tname\tnr of images (", i, ")")
         for thread in threads:
@@ -245,12 +247,15 @@ def breakTraining():
 keyboardStop = threading.Thread(target=breakTraining)
 keyboardStop.start()
 
-images = load_photos(settings.directory, names = True)
-(imagesTrain, imagesTest) = chunks(images, int(len(images)*995/1000))
+
+#(imagesTrain, imagesTest) = chunks(images, int(len(images)*995/1000))
+imagesTest = load_photos(settings.directoryval, names = True).copy()
+imagesCombiner.clear()
+imagesTrain = load_photos(settings.directorytrain, names = True).copy()
 imagesChunks =  createBatch(imagesTrain, 4*(int(settings.batch_size*1.25))+1)
 
 
-print('Loaded Images: %d' % int(len(images)))
+print('Loaded Images: %d / %d' % (int(len(imagesTrain)), int(len(imagesTest))))
 
 
 # Generators
@@ -325,7 +330,7 @@ settings.model.summary()
 opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 # Let's train the settings.model using RMSprop
 #    epoch_start = 0
-settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
+#settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
 #    settings.model.compile(loss='mean_squared_error',
 #                  optimizer=opt,
 #                  metrics=['mean_squared_error', 'mean_absolute_error'])
@@ -336,7 +341,8 @@ settings.model.compile(loss='mean_squared_error',
           metrics=['categorical_accuracy', 'mean_squared_error', 'mean_absolute_error', 'accuracy'])
 filepath=settings.save_dir+"/weights-improvement-"+settings.model_name+"-{epoch:02d}-{categorical_accuracy:.4f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='categorical_accuracy', verbose=1, save_best_only=True, mode='max')
-callbacks_list = [checkpoint]
+webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
+callbacks_list = [checkpoint, webpage]
 historyAvg = []
 if isfile(model_path+".json"):
     try:
