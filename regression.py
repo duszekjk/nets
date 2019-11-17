@@ -19,6 +19,7 @@ from keras import backend as K
 from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
+from keras.utils.training_utils import multi_gpu_model
 from keras.layers import Dense, Dropout, Activation, Flatten, Lambda, Reshape
 from keras.layers import Conv2D, MaxPooling2D, MaxPooling1D, serialize
 from keras.utils import plot_model
@@ -46,7 +47,7 @@ import requests
 
 from PIL import Image
 #import keyboard  # using module keyboard
-from getkey import getkey, keys
+#from getkey import getkey, keys
 
 labelsb = dict()
 labels = dict()
@@ -56,6 +57,9 @@ imagesBlocker = 0
 
 imagesCombinerLoad = dict()
 imagesBlockerLoad = 0
+
+
+os.environ["PATH"] += os.pathsep + '/usr/local/Cellar/graphviz/2.40.1/bin'
 
 def showPlots():
     global historyAvg
@@ -134,7 +138,7 @@ def loadIMGS(paths):
         if ill%illSum == 1:
             continue
         filename = paths[name]
-        print(str(ill/illSum), filename)
+#        print(str(ill/illSum), filename)
         image = load_img(filename, target_size=(512, 512))
         image = img_to_array(image)
         # reshape data for the model
@@ -143,6 +147,30 @@ def loadIMGS(paths):
         image = preprocess_input(image)
         imagesL[name] = image
     return imagesL
+def loadThisPhotoNames(directory, className, i):
+    global imagesBlocker
+    global imagesCombiner
+    global labels
+    global labelsb
+#    j = 0
+    images = dict()
+            # load an image from file
+    photoData = className.split(", ")
+    filename = directory + '/' + photoData[0] + ".jpg"
+
+    # load an image from file
+    label = np.array(className.split(","))[1:-1].astype(float)
+    label[0] = (label[0]*2.0)-1.0   #ac
+    label[1] = (label[1]*2.0)-1.0
+    label[2] = (label[2]/3.0)
+    label[3] = (label[3]/100.0)-1.0 #max vigor
+    label[4] = (label[4]*3.64)-1.82 #determinism
+    labels[i] = label#[label[0], label[1], label[4]]
+    images[i] = filename
+#    j += 1
+    imagesCombiner.update(images)
+    imagesBlocker += 1
+#    print("class end: \t", className, "\t",len(images))
 
 def loadPhotosNamesInCategory(directory, className, i):
     global imagesBlocker
@@ -160,16 +188,18 @@ def loadPhotosNamesInCategory(directory, className, i):
             filename = directory + '/' + className + '/' + name
             #            classNameInt = int(className)
             #            label = np.array([((classNameInt+30)%100)/100.0, ((((classNameInt)%1000000)//1000)/100.0)-1.0]).astype(float) #, (classNameInt//1000000)/1000.0]).astype(float)
+#            print(className)
             label = np.array(className.split("+")).astype(float)
-            label[0] = (label[0]*2.0)-1.0
+            label[0] = (label[0]*2.0)-1.0   #ac
             label[1] = (label[1]*2.0)-1.0
             label[2] = (label[2]/3.0)
-            label[3] = (label[3]/100.0)-100.0
+            label[3] = (label[3]/100.0)-1.0 #max vigor
+            label[4] = (label[4]*3.64)-1.82 #determinism
 #            print(label)
 #            label =  className#np.array([((classNameInt+30)%100)/100.0, (classNameInt//1000)/100.0]).astype(float)
             #            label = (label*2.0) - 1.0
 #            labelsb[settings.labelnr[className]] =  className #(((classNameInt//1000000)/1000.0)*2) - 1.0
-            labels[i*100000+j] = label
+            labels[i*100000+j] = label#[label[0], label[1], label[4]]
             images[i*100000+j] = filename
             j += 1
     #    while i != imagesBlocker:
@@ -182,7 +212,7 @@ def loadPhotosNamesInCategory(directory, className, i):
 
 
 
-def load_photos(directory, names = False):
+def load_photos(directory, names = False, csv=""):
     global imagesBlocker
     global imagesCombiner
     
@@ -190,15 +220,22 @@ def load_photos(directory, names = False):
     threads = []
     images = dict()
     i = 0
-    for className in listdir(directory):
+    
+    classesNames = []
+    if csv == "":
+        classesNames = listdir(directory)
+    else:
+        classesNames = open(csv, "r")
+    for className in classesNames:
         if className[0] != '.':
             #            print("class: ", className, i, names)
-            if ".png" in className:
+            if csv != "":
                 imagesBlocker = 0
-                threads.append(threading.Thread(target=loadThisPhoto, args=(directory, className, i)))
+#                threads.append(threading.Thread(target=loadThisPhoto, args=(directory, className, i)))
+                loadThisPhotoNames(directory, className, i)
             else:
                 #                threads.append(threading.Thread(target=loadPhotosInCategory, args=(directory, className, i)))
-                print(className)
+#                print(className)
                 if names == True:
                     loadPhotosNamesInCategory(directory, className, i)
 #                    loadPhotosNamesInCategory(directory, className, i+1)
@@ -231,34 +268,12 @@ def load_photos(directory, names = False):
 analisedData = None
 
 
-def breakTraining():
-    while settings.stopTraining != True:  # making a loop
-        time.sleep(3)
-        key = getkey()
-        try:  # used try so that if user pressed other than the given key error will not be shown
-            if key == 'q' or key == 'p':  # if key 'q' is pressed
-                if key == 'q':
-                    settings.stopTraining = True
-                    print('\tStopping!\t')
-                if key == 'p':
-                    settings.shouldShowPlots = True
-                    settings.showPlots()
-                    print('\tPlots comming!\t')
-            else:
-                if key != None:
-                    print('press q to stop or p to show plots')
-                pass
-        except:
-            print('press q to stop or p to show plots')
 
 
-keyboardStop = threading.Thread(target=breakTraining)
-keyboardStop.start()
-
-
-imagesTest = load_photos(settings.directoryval, names = True).copy()
+imagesTest = load_photos(settings.directoryval, names = True, csv = settings.directoryval+"/classes.csv").copy()
 imagesCombiner.clear()
-imagesTrain = load_photos(settings.directorytrain, names = True).copy()
+imagesTrain = load_photos(settings.directorytrain, names = True, csv = settings.directorytrain+"/classes.csv").copy()
+imagesCombiner.clear()
 #(imagesTrain, imagesTest) = chunks(images, int(len(images)*995/1000))
 imagesChunks =  createBatch(imagesTrain, 4*(int(settings.batch_size*1.25))+1)
 
@@ -281,125 +296,84 @@ if not os.path.isdir(settings.save_dir):
 model_path = os.path.join(settings.save_dir, settings.model_name)
     
 settings.model = Sequential()
-
-settings.model.add(Conv2D(32, (3, 3), padding='same',
-input_shape=(512, 512, 3)))
+settings.model.add(Conv2D(32, (3, 3), padding='same', input_shape=(320, 320, 3), name='conv2d_1b'))
 #kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-settings.model.add(LeakyReLU(alpha=0.001))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
+settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_1'))
+settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_1'))
 
-settings.model.add(Conv2D(32, (3, 3), padding='same'))
-settings.model.add(LeakyReLU(alpha=0.001))
-settings.model.add(Conv2D(32, (3, 3)))
-settings.model.add(LeakyReLU(alpha=0.001))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-#    settings.model.add(Dropout(0.001))
+settings.model.add(Conv2D(32, (3, 3), padding='same', name='conv2d_2'))
+settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_2'))
+settings.model.add(Conv2D(32, (3, 3), name='conv2d_3'))
+settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_3'))
+settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_2'))
+#settings.model.add(Dropout(0.1))
 
-settings.model.add(Conv2D(32, (3, 3), padding='same'))
-settings.model.add(LeakyReLU(alpha=0.001))
-settings.model.add(Conv2D(32, (3, 3)))
-settings.model.add(LeakyReLU(alpha=0.001))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-#    settings.model.add(Dropout(0.001))
+settings.model.add(Conv2D(32, (3, 3), padding='same', name='conv2d_4'))
+settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_4'))
+settings.model.add(Conv2D(32, (3, 3), name='conv2d_5'))
+settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_5'))
+settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_3'))
+settings.model.add(Dropout(0.1))
+#
 
-settings.model.add(Conv2D(64, (3, 3), padding='same'))
-settings.model.add(LeakyReLU(alpha=0.01))
-settings.model.add(Conv2D(64, (3, 3)))
-settings.model.add(LeakyReLU(alpha=0.01))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-#    settings.model.add(Dropout(0.001))
+settings.model.add(Conv2D(64, (3, 3), padding='same', name='cconv2d_6'))
+settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_6'))
+settings.model.add(Conv2D(64, (3, 3), name='conv2d_7'))
+settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_7 '))
+settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_4'))
+settings.model.add(Dropout(0.2))
 
-settings.model.add(Conv2D(128, (5, 5), padding='same'))
-settings.model.add(LeakyReLU(alpha=0.01))
-settings.model.add(Conv2D(128, (5, 5)))
-settings.model.add(LeakyReLU(alpha=0.01))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-settings.model.add(Dropout(0.00001))
+settings.model.add(Flatten(name='flatten_1'))
+settings.model.add(Dense(1512, name='dense_1a'))
+settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12'))
 
-settings.model.add(Conv2D(256, (3, 3), padding='same'))
-settings.model.add(LeakyReLU(alpha=0.001))
-settings.model.add(Conv2D(256, (3, 3)))
-settings.model.add(LeakyReLU(alpha=0.1))
-settings.model.add(MaxPooling2D(pool_size=(2, 2)))
-settings.model.add(Dropout(0.0001))
+settings.model.add(Dropout(0.4))
 
+settings.model.add(Dense(settings.num_classes, name='dense_1b'))
+settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_13'))
 
-
-settings.model.add(Flatten())
-
-settings.model.add(Dense(settings.num_classes))
-
-settings.model.add(Dense(4))
+settings.model.add(Dropout(0.4))
+settings.model.add(Dense(5, name='dense_2'))
 #                             , kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
 settings.model.add(Activation('linear'))
 #    settings.model.add(Dropout(0.0005))
-settings.model.summary()
 
+settings.model.summary()
 # initiate RMSprop optimizer
 #opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
 opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 # Let's train the settings.model using RMSprop
 #    epoch_start = 0
 #settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
-settings.model.load_weights(settings.save_dir+"/"+"4paramitertsMay.h5")
-#    settings.model.compile(loss='mean_squared_error',
-#                  optimizer=opt,
-#                  metrics=['mean_squared_error', 'mean_absolute_error'])
+#settings.model.load_weights(settings.save_dir+"/"+"weights-improvement-5paramitertsR-03-0.2952.hdf5")
+#, by_name=True)
 
-
+#settings.model = multi_gpu_model(settings.model, gpus=2)
 settings.model.compile(loss='mean_squared_error',
                      optimizer=opt,
                      metrics=['categorical_accuracy', 'mean_squared_error', 'mean_absolute_error', 'accuracy'])
 filepath=settings.save_dir+"/weights-improvement-"+settings.model_name+"-{epoch:02d}-{mean_absolute_error:.4f}.hdf5"
+
 checkpoint = ModelCheckpoint(filepath, monitor='mean_squared_error', verbose=1, save_best_only=True, mode='min')
 webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
 callbacks_list = [checkpoint, webpage]
 historyAvg = []
-if isfile(model_path+".json"):
-    try:
-        with open(model_path+".json", 'r') as fp:
-            historyAvg = json.load(fp)
-    except:
-        print("error loading history")
-
+#History = settings.model.fit_generator(generator=training_generator,
+#                                       validation_data=validation_generator,
+#                                       use_multiprocessing=True,
+#                                       workers=6, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
 History = settings.model.fit_generator(generator=training_generator,
-                                       validation_data=validation_generator,
-                                       use_multiprocessing=False,
-                                       workers=1, epochs=settings.epochs, verbose = 2, callbacks=callbacks_list, initial_epoch = epoch_start)
-
-settings.model.save(model_path)
-with open(model_path+".json", 'w') as fp:
-    json.dump(History.history, fp)
-print(History.history.keys())
-ids = range(1, len(History.history['categorical_accuracy'])+1)
-plt.plot(ids, History.history['categorical_accuracy'], ids,  History.history['val_categorical_accuracy'])
-plt.title('model categorical_accuracy')
-plt.ylabel('accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.show()
-plt.savefig(settings.model_name+"_plotA.png")
-plt.plot(ids, History.history['mean_absolute_error'], ids,  History.history['val_mean_absolute_error'])
-plt.title('model mean absolute error')
-plt.ylabel('mean absolute error')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.show()
-plt.savefig(settings.model_name+"_plotB.png")
-
-plt.plot(ids, History.history['mean_squared_error'], ids,  History.history['val_mean_squared_error'])
-plt.title('model mean squared error')
-plt.ylabel('mean squared error')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.show()
-plt.savefig(settings.model_name+"_plotC.png")
+                                      validation_data=validation_generator,
+                                      use_multiprocessing=False,
+                                      workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
+#
+#settings.model.save(model_path)
 
 
 
 stopTraining = True
-#
-#
+
+
 #imagesLoaded = loadIMGS(imagesTest)
 #(x_test, y_test) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesLoaded.keys())])
 #
@@ -424,27 +398,45 @@ classes = settings.model.predict(my_x_test, batch_size=16)
 j = 0
 
 #print(classes)
-if len(classes[0]) == 2:
+if len(classes[0]) == 5:
     
     arrayX = "["
     arrayY = "["
     arrayZ = "["
+    arrayA = "["
+    arrayB = "["
+    arrayC = "["
     for classesProbs in classes:
-        trueA = (my_y_test[j][0] + 1.0)/2
-        trueB = (my_y_test[j][1] ) * 3
-        predA = (classesProbs[0] + 1.0)/2.0
-        predB = (classesProbs[1] ) * 3
+        
+        trueA = round((my_y_test[j][0] + 1.0)/2, 6)
+        trueB = round((my_y_test[j][1] + 1.0)/2, 6)
+        trueC = round((my_y_test[j][2] * 3.0), 6)
+        trueD = round((my_y_test[j][3] + 1.0) * 100.0, 6)
+        trueE = round((my_y_test[j][3] + 1.82)/3.64, 6)
+        
+        predA = round((classesProbs[0] + 1.0)/2, 6)
+        predB = round((classesProbs[1] + 1.0)/2, 6)
+        predC = round((classesProbs[2] * 3.0), 6)
+        predD = round((classesProbs[3] + 1.0) * 100.0, 6)
+        predE = round((classesProbs[3] + 1.82)/3.64, 6)
+        
 #        print(my_y_test[j], classesProbs)
-        print("\ttrue:\t", trueA, trueB, "\tprediction:\t", predA, predB, "\t = ", ((abs(trueA - predA)*1000000)//1000)/1000, ((abs(trueB - predB)*1000000)//1000)/1000, "file: ", int(100+trueA*10) + 1000 * int(trueB * 100))
+        print("\ttrue:\t", trueA, trueB, trueC, trueD, trueE, "\tprediction:\t", predA, predB, predC, predD, predE, "\t = ", round(abs(trueA - predA), 2), round(abs(trueB - predB), 2), round(abs(trueC - predC), 2), round(abs(trueD - predD), 2), round(abs(trueE - predE), 2))
         arrayX += str(predA)+", "
         arrayY += str(predB)+", "
-        arrayZ += "\""+str(trueA)+"+"+str(trueB)+"\""+", "
+        arrayA += str(predC)+", "
+        arrayB += str(predD)+", "
+        arrayC += str(predE)+", "
+        arrayZ += "\""+str(trueA)+"+"+str(trueB)+"+"+str(trueC)+"+"+str(trueD)+"+"+str(trueE)+"\""+", "
         j += 1
     
     
     #    print(prediction)
     print(arrayX+"]")
     print(arrayY+"]")
+    print(arrayA+"]")
+    print(arrayB+"]")
+    print(arrayC+"]")
     print(arrayZ+"]")
 
 else:

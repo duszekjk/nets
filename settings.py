@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from keras.models import Sequential
+#from keras.utils.training_utils import multi_gpu_model
 import os
 from os import listdir
 from os.path import isfile, join
@@ -16,6 +17,7 @@ def init():
     global saveNow
     global directory
     global directorytrain
+    global directorytrainb
     global directorytest
     global directoryval
     global model_name
@@ -28,21 +30,22 @@ def init():
     
     labelnr = dict()
     batch_size = 16
-    num_classes = 54#len(listdir(directory))
-    epochs = 30
+    num_classes = 20#len(listdir(directory))
+    epochs = 25
     data_augmentation = False
 
 
     save_dir = os.path.join('/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/nets/project/firstNets', 'saved_models')
     saveNow = 0
 
-    directory = '/Users/jacekkaluzny/Pictures/4paramsmay/data'
+    directory = '/Users/jacekkaluzny/Pictures/trees5r'
+#    directorytrainb = '/Volumes/Flash⚡️ 1/trees5c/train'
     directorytrain = directory+'/train'
-    directorytest = directory+'/test'
+    directorytest = directory+'/val'
     directoryval = directory+'/val'
     
 
-    model_name = '4paramitertsMayR.h5'
+    model_name = '5paramitertsR'
     model = Sequential()
 
     stopTraining = False

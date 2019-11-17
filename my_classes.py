@@ -51,17 +51,17 @@ class DataGenerator(keras.utils.Sequence):
         
         return X, y
     def on_epoch_end(self, epoch=int(settings.saveNow), logs=None):
-        if(logs != None):
-            settings.historyAvg['mean_squared_error'] += logs['mean_squared_error']
-            settings.historyAvg['val_mean_squared_error'] += logs['val_mean_squared_error']
-            settings.historyAvg['mean_absolute_error'] += logs['mean_absolute_error']
-            settings.historyAvg['val_mean_absolute_error'] += logs['val_mean_absolute_error']
-            model_path = os.path.join(settings.save_dir, settings.model_name)
-            with open(model_path+".json", 'w') as fp:
-                json.dump(settings.historyAvg, fp)
-            if(settings.shouldShowPlots == True):
-                settings.showPlots()
-                settings.shouldShowPlots = False
+#        if(logs != None):
+#            settings.historyAvg['mean_squared_error'] += logs['mean_squared_error']
+#            settings.historyAvg['val_mean_squared_error'] += logs['val_mean_squared_error']
+#            settings.historyAvg['mean_absolute_error'] += logs['mean_absolute_error']
+#            settings.historyAvg['val_mean_absolute_error'] += logs['val_mean_absolute_error']
+#            model_path = os.path.join(settings.save_dir, settings.model_name)
+#            with open(model_path+".json", 'w') as fp:
+#                json.dump(settings.historyAvg, fp)
+#            if(settings.shouldShowPlots == True):
+#                settings.showPlots()
+#                settings.shouldShowPlots = False
         'Updates indexes after each epoch'
         os.system("caffeinate -u -t 36000 &")
 #        settings.saveNow = epoch
@@ -74,7 +74,7 @@ class DataGenerator(keras.utils.Sequence):
 
     def __data_generation(self, list_IDs_temp):
         imagesLoaded = self.loadIMGS(list_IDs_temp)
-        (x_train, y_train) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([self.labels[x] for x in list(imagesLoaded.keys())])
+        (x_train, y_train) = np.array(list(imagesLoaded.values())).reshape(-1,320,320,3), np.array([self.labels[x] for x in list(imagesLoaded.keys())])
         
         x_train = x_train.astype('float32')
         x_train /= 255.0
@@ -87,20 +87,16 @@ class DataGenerator(keras.utils.Sequence):
         imagesL = dict()
         for name in paths:
             filename = paths[name]
-#            print(filename, self.labels[name])
-            image = load_img(filename, target_size=(512, 512))
+            image = load_img(filename, target_size=(320, 320))
             image = img_to_array(image)
 #            if(random.getrandbits(1)):
 #                image = np.flip(image, 1)
 #            if(random.getrandbits(1)):
 #                image = gaussian_filter(image, sigma=(3))
-#            print(image)
             # reshape data for the model
             image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-#            print(image)
 #            if(random.getrandbits(1)):
 #                np.flip(image, 2)
-#            print(image)
             # prepare the image for the VGG model
             image = preprocess_input(image)
             imagesL[name] = image
