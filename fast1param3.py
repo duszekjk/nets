@@ -81,22 +81,22 @@ def visualize_embeddings(data_path, model_path, model):
     features = []
     labels = []
 
-    for i in range(len(dirs)):
-        if(dirs[i][0] != "."):
-            img_files = listdir(path+dirs[i])
-            for j in range(min(100, len(img_files))):
-                if(img_files[j][0] != "."):
-                    img_path = path+dirs[i]+"/"+img_files[j]
-                    img = image.load_img(img_path, target_size=(512, 512))
-                    x = image.img_to_array(img)
-                    x = np.expand_dims(x, axis=0)
-                    x = np.multiply(x, 1./255)
+#    for i in range(len(dirs)):
+#        if(dirs[i][0] != "."):
+    img_files = listdir(path)
+    for j in range(min(100, len(img_files))):
+        if(img_files[j][0] != "." and img_files[j][-4:] != ".csv"):
+            img_path = path+img_files[j]
+            img = image.load_img(img_path, target_size=(320, 320))
+            x = image.img_to_array(img)
+            x = np.expand_dims(x, axis=0)
+            x = np.multiply(x, 1./255)
+            i = int(img_files[j][:2])
+            preds = feature_model.predict(x)[0]
+            features.append(preds)
+            labels.append(i)
 
-                    preds = feature_model.predict(x)[0]
-                    features.append(preds)
-                    labels.append(i)
-
-                    print(img_files[j], img_files[j][-8:-4])
+            print(img_files[j], img_files[j][-8:-4])
 
     tsne = manifold.TSNE(n_components=2, random_state=0)
     projected = tsne.fit_transform(features)
@@ -195,7 +195,7 @@ def loadIMGS(paths):
         if ill%illSum != 1:
             continue
         filename = paths[name]
-        image = load_img(filename, target_size=(512, 512))
+        image = load_img(filename, target_size=(320, 320))
         image = img_to_array(image)
         # reshape data for the model
         image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
@@ -364,6 +364,7 @@ training_generator = DataGenerator(imagesTrain, labels)
 validation_generator = DataGenerator(imagesTest, labels)
 if not os.path.isdir(settings.save_dir):
     os.makedirs(settings.save_dir)
+settings.model_name += "CM"
 model_path = os.path.join(settings.save_dir, settings.model_name)
 #keras.callbacks.ModelCheckpoint(model_path, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
@@ -408,7 +409,7 @@ settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12'))
 #
 settings.model.add(Dropout(0.4, name='dropout_last'))
 
-settings.model.add(Dense(settings.num_classes, name='dense_1b'))
+settings.model.add(Dense(settings.num_classes, name='dense_1'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_13'))
 #    settings.model.add(Dropout(0.0005))
 settings.model.summary()
@@ -419,7 +420,7 @@ opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 
 
 
-settings.model.load_weights("/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/nets/project/firstNets/saved_models/load.hdf5")
+#settings.model.load_weights("/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/nets/project/firstNets/saved_models/weights-improvement-5paramitertsR-03-0.9999.hdf5")
 
 
 settings.model.compile(loss='mean_squared_error',
@@ -427,63 +428,38 @@ settings.model.compile(loss='mean_squared_error',
           metrics=['categorical_accuracy', 'mean_squared_error', 'mean_absolute_error', 'accuracy'])
 
 
-#visualize_embeddings(settings.directory, model_path, settings.model)
 filepath=settings.save_dir+"/weights-improvement-"+settings.model_name+"-{epoch:02d}-{categorical_accuracy:.4f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='categorical_accuracy', verbose=1, save_best_only=True, mode='max')
 webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
 callbacks_list = [checkpoint, webpage]
-#historyAvg = []
-#if isfile(model_path+".json"):
-#    try:
-#        with open(model_path+".json", 'r') as fp:
-#            historyAvg = json.load(fp)
-#    except:
-#        print("error loading history")
-#
+
 History = settings.model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     use_multiprocessing=True,
                     workers=6, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
 
 settings.model.save(model_path)
-#with open(model_path+".json", 'w') as fp:
-#    json.dump(History.history, fp)
-#print(History.history.keys())
-#
-#plt.plot(History.history['categorical_accuracy'])
-#plt.title('model loss')
-#plt.ylabel('accuracy')
-#plt.xlabel('epoch')
-#plt.legend(['train + test'], loc='upper left')
-#plt.show()
-#plt.savefig("plotA.png")
-#plt.plot(History.history['mean_absolute_error'])
-#plt.title('model mean absolute error')
-#plt.ylabel('mean absolute error')
-#plt.xlabel('epoch')
-#plt.legend(['train + test'], loc='upper left')
-#plt.show()
-#plt.savefig("plotB.png")
-#
-#
-#
+visualize_embeddings(settings.directory, model_path, settings.model)
+
 stopTraining = True
-#
-#
-imagesLoaded = loadIMGS(imagesTest)
-(x_test, y_test) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesLoaded.keys())])
 
-x_test = x_test.astype('float32')
-x_test /= 255.0
+imagesTestB = load_photos(settings.directorytest, names = True, csv = settings.directorytest+"/classes.csv").copy()
 
-scores = settings.model.evaluate(x_test, y_test, verbose=1)
-print('Test loss:', scores[0])
-print('Test accuracy:', scores[1])
+training_generator = DataGenerator(imagesTestB, labels)
+#imagesLoaded = loadIMGS(imagesTest)
+#(x_test, y_test) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesLoaded.keys())])
+#
+#x_test = x_test.astype('float32')
+#x_test /= 255.0
+
+#scores = settings.model.evaluate(x_test, y_test, verbose=1)
+#print('Test loss:', scores[0])
+#print('Test accuracy:', scores[1])
 print("additional tests:")
-listOfTests = load_photos(settings.directorytest, names = True)
+listOfTests = load_photos(settings.directorytest, names = True, csv = settings.directorytest+"/classes.csv").copy()
 myTest = loadIMGS(listOfTests)
 print('Loaded Images Test: %d' % int(len(myTest)))
-(my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(myTest.keys())])
+(my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,320,320,3), np.array([labels[x] for x in list(myTest.keys())])
 my_x_test = my_x_test.astype('float32')
 my_x_test /= 255.0
 #my_y_test = keras.utils.to_categorical(my_y_test)

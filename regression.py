@@ -58,6 +58,8 @@ imagesBlocker = 0
 imagesCombinerLoad = dict()
 imagesBlockerLoad = 0
 
+j=0
+
 
 os.environ["PATH"] += os.pathsep + '/usr/local/Cellar/graphviz/2.40.1/bin'
 
@@ -139,7 +141,7 @@ def loadIMGS(paths):
             continue
         filename = paths[name]
 #        print(str(ill/illSum), filename)
-        image = load_img(filename, target_size=(512, 512))
+        image = load_img(filename, target_size=(320, 320))
         image = img_to_array(image)
         # reshape data for the model
         image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
@@ -152,6 +154,7 @@ def loadThisPhotoNames(directory, className, i):
     global imagesCombiner
     global labels
     global labelsb
+    global j
 #    j = 0
     images = dict()
             # load an image from file
@@ -160,14 +163,15 @@ def loadThisPhotoNames(directory, className, i):
 
     # load an image from file
     label = np.array(className.split(","))[1:-1].astype(float)
-    label[0] = (label[0]*2.0)-1.0   #ac
+    label[0] = (label[0]*5.0)-2.5  #ac
     label[1] = (label[1]*2.0)-1.0
     label[2] = (label[2]/3.0)
-    label[3] = (label[3]/100.0)-1.0 #max vigor
-    label[4] = (label[4]*3.64)-1.82 #determinism
-    labels[i] = label#[label[0], label[1], label[4]]
-    images[i] = filename
-#    j += 1
+    label[3] = (label[3]/102.0)-1.0 #max vigor
+    label[4] = (label[4]*3.34)-2.172 #determinism
+    labels[j] = label#[label[0], label[1], label[4]]
+    images[j] = filename
+#    print(filename, label)
+    j += 1
     imagesCombiner.update(images)
     imagesBlocker += 1
 #    print("class end: \t", className, "\t",len(images))
@@ -178,7 +182,7 @@ def loadPhotosNamesInCategory(directory, className, i):
     global labels
     global labelsb
     images = dict()
-    j = 0
+#    j = 0
     #    imagesCombiner = dict()
     #    imagesBlocker = 0
 #    print("cl ", className)
@@ -190,11 +194,11 @@ def loadPhotosNamesInCategory(directory, className, i):
             #            label = np.array([((classNameInt+30)%100)/100.0, ((((classNameInt)%1000000)//1000)/100.0)-1.0]).astype(float) #, (classNameInt//1000000)/1000.0]).astype(float)
 #            print(className)
             label = np.array(className.split("+")).astype(float)
-            label[0] = (label[0]*2.0)-1.0   #ac
+            label[0] = ((label[0]-0.25)*2.67)-1.0   #ac
             label[1] = (label[1]*2.0)-1.0
             label[2] = (label[2]/3.0)
             label[3] = (label[3]/100.0)-1.0 #max vigor
-            label[4] = (label[4]*3.64)-1.82 #determinism
+            label[4] = ((label[4]-0.3)*3.08)-1.54 #determinism
 #            print(label)
 #            label =  className#np.array([((classNameInt+30)%100)/100.0, (classNameInt//1000)/100.0]).astype(float)
             #            label = (label*2.0) - 1.0
@@ -282,6 +286,7 @@ imagesChunks =  createBatch(imagesTrain, 4*(int(settings.batch_size*1.25))+1)
 print('Loaded Images: %d / %d' % (int(len(imagesTrain)), int(len(imagesTest))))
 
 # Generators
+#print(imagesTest)
 training_generator = DataGenerator(imagesTrain, labels)
 validation_generator = DataGenerator(imagesTest, labels)
 if not os.path.isdir(settings.save_dir):
@@ -293,81 +298,86 @@ model_path = os.path.join(settings.save_dir, settings.model_name)
 epoch_start = 0
 if not os.path.isdir(settings.save_dir):
     os.makedirs(settings.save_dir)
+    
+    
+# ----------------------------------------- Model start ----------------------------------------#
+settings.model_name += "R"
 model_path = os.path.join(settings.save_dir, settings.model_name)
     
 settings.model = Sequential()
-settings.model.add(Conv2D(32, (3, 3), padding='same', input_shape=(320, 320, 3), name='conv2d_1b'))
+settings.model.add(Conv2D(32, (3, 3), padding='same',input_shape=(320, 320, 3), name='conv2d_1'))
 #kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
 settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_1'))
 settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_1'))
 
 settings.model.add(Conv2D(32, (3, 3), padding='same', name='conv2d_2'))
 settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_2'))
-settings.model.add(Conv2D(32, (3, 3), name='conv2d_3'))
-settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_3'))
 settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_2'))
-#settings.model.add(Dropout(0.1))
+#    settings.model.add(Dropout(0.001))
 
 settings.model.add(Conv2D(32, (3, 3), padding='same', name='conv2d_4'))
 settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_4'))
-settings.model.add(Conv2D(32, (3, 3), name='conv2d_5'))
-settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_5'))
 settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_3'))
-settings.model.add(Dropout(0.1))
+#settings.model.add(Dropout(0.3))
 #
-
 settings.model.add(Conv2D(64, (3, 3), padding='same', name='cconv2d_6'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_6'))
-settings.model.add(Conv2D(64, (3, 3), name='conv2d_7'))
-settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_7 '))
 settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_4'))
-settings.model.add(Dropout(0.2))
+#
 
 settings.model.add(Flatten(name='flatten_1'))
-settings.model.add(Dense(1512, name='dense_1a'))
+settings.model.add(Dense(320, name='dense_1a'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12'))
+#
+settings.model.add(Dropout(0.2, name='dropout_last'))
 
-settings.model.add(Dropout(0.4))
+settings.model.add(Dense(320, name='dense_1b'))
+settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12b'))
+settings.model.add(Dropout(0.2))
 
-settings.model.add(Dense(settings.num_classes, name='dense_1b'))
+settings.model.add(Dense(settings.num_classes, name='dense_1'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_13'))
 
-settings.model.add(Dropout(0.4))
+
 settings.model.add(Dense(5, name='dense_2'))
 #                             , kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
-settings.model.add(Activation('linear'))
-#    settings.model.add(Dropout(0.0005))
+settings.model.add(Activation('linear')) 
+
 
 settings.model.summary()
+
+
 # initiate RMSprop optimizer
+
 #opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
-opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
-# Let's train the settings.model using RMSprop
-#    epoch_start = 0
+opt = 'adam'#keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
+
+
 #settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
-#settings.model.load_weights(settings.save_dir+"/"+"weights-improvement-5paramitertsR-03-0.2952.hdf5")
-#, by_name=True)
+#settings.model.load_weights(settings.save_dir+"/"+"weights-improvement-5paramitertsR-43-0.04104.hdf5")
+print(os.system("ls -al \""+settings.save_dir+"\""))
+settings.model.load_weights(settings.save_dir+"/load.hdf5")
+
 
 #settings.model = multi_gpu_model(settings.model, gpus=2)
 settings.model.compile(loss='mean_squared_error',
                      optimizer=opt,
                      metrics=['categorical_accuracy', 'mean_squared_error', 'mean_absolute_error', 'accuracy'])
-filepath=settings.save_dir+"/weights-improvement-"+settings.model_name+"-{epoch:02d}-{mean_absolute_error:.4f}.hdf5"
+filepath=settings.save_dir+"/weights-improvement-"+settings.model_name+"-{epoch:02d}-{mean_absolute_error:.5f}.hdf5"
 
 checkpoint = ModelCheckpoint(filepath, monitor='mean_squared_error', verbose=1, save_best_only=True, mode='min')
 webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
 callbacks_list = [checkpoint, webpage]
 historyAvg = []
-#History = settings.model.fit_generator(generator=training_generator,
-#                                       validation_data=validation_generator,
-#                                       use_multiprocessing=True,
-#                                       workers=6, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
-History = settings.model.fit_generator(generator=training_generator,
-                                      validation_data=validation_generator,
-                                      use_multiprocessing=False,
-                                      workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
+
+
+#History = settings.model.fit_generator(generator=training_generator, steps_per_epoch=200,
+#                                      validation_data=validation_generator,
+#                                      use_multiprocessing=False,
+#                                      workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start, max_queue_size=100)
+
 #
-#settings.model.save(model_path)
+settings.model.save(model_path)
 
 
 
@@ -385,11 +395,11 @@ stopTraining = True
 #print('Test accuracy:', scores[1])
 print("additional tests:")
 imagesCombiner.clear()
-listOfTests = load_photos(settings.directorytest, names = True)
+listOfTests = load_photos(settings.directorytest, names = True, csv = settings.directorytest+"/classes.csv").copy()
 print('Loaded Images Test: %d' % int(len(listOfTests)))
 myTest = loadIMGS(listOfTests)
 print('Loaded Images Test: %d' % int(len(myTest)))
-(my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(myTest.keys())])
+(my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,320,320,3), np.array([labels[x] for x in list(myTest.keys())])
 my_x_test = my_x_test.astype('float32')
 my_x_test /= 255.0
 #my_y_test = keras.utils.to_categorical(my_y_test)
@@ -408,17 +418,17 @@ if len(classes[0]) == 5:
     arrayC = "["
     for classesProbs in classes:
         
-        trueA = round((my_y_test[j][0] + 1.0)/2, 6)
-        trueB = round((my_y_test[j][1] + 1.0)/2, 6)
+        trueA = round((my_y_test[j][0] + 2.5)/5.0, 6)
+        trueB = round((my_y_test[j][1] + 1.0)/2.0, 6)
         trueC = round((my_y_test[j][2] * 3.0), 6)
-        trueD = round((my_y_test[j][3] + 1.0) * 100.0, 6)
-        trueE = round((my_y_test[j][3] + 1.82)/3.64, 6)
+        trueD = round((my_y_test[j][3] + 1.0) * 102.0, 6)
+        trueE = round((my_y_test[j][4] + 2.172)/3.34, 6)
         
-        predA = round((classesProbs[0] + 1.0)/2, 6)
+        predA = round((classesProbs[0] + 2.5)/5.0, 6)
         predB = round((classesProbs[1] + 1.0)/2, 6)
         predC = round((classesProbs[2] * 3.0), 6)
-        predD = round((classesProbs[3] + 1.0) * 100.0, 6)
-        predE = round((classesProbs[3] + 1.82)/3.64, 6)
+        predD = round((classesProbs[3] + 1.0) * 102.0, 6)
+        predE = round((classesProbs[4] + 2.172)/3.34, 6)
         
 #        print(my_y_test[j], classesProbs)
         print("\ttrue:\t", trueA, trueB, trueC, trueD, trueE, "\tprediction:\t", predA, predB, predC, predD, predE, "\t = ", round(abs(trueA - predA), 2), round(abs(trueB - predB), 2), round(abs(trueC - predC), 2), round(abs(trueD - predD), 2), round(abs(trueE - predE), 2))

@@ -20,7 +20,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size=settings.batch_size, dim=(512,512,512), n_channels=3, shuffle=True):
+    def __init__(self, list_IDs, labels, batch_size=settings.batch_size, dim=(320,320,320), n_channels=3, shuffle=True):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
@@ -75,7 +75,8 @@ class DataGenerator(keras.utils.Sequence):
     def __data_generation(self, list_IDs_temp):
         imagesLoaded = self.loadIMGS(list_IDs_temp)
         (x_train, y_train) = np.array(list(imagesLoaded.values())).reshape(-1,320,320,3), np.array([self.labels[x] for x in list(imagesLoaded.keys())])
-        
+#        print(list_IDs_temp)
+#        print(np.array([self.labels[x] for x in list(imagesLoaded.keys())]))
         x_train = x_train.astype('float32')
         x_train /= 255.0
         

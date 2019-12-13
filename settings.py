@@ -30,22 +30,24 @@ def init():
     
     labelnr = dict()
     batch_size = 16
-    num_classes = 20#len(listdir(directory))
-    epochs = 25
+    num_classes = 6#len(listdir(directory))
+    epochs = 45
     data_augmentation = False
 
 
     save_dir = os.path.join('/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/nets/project/firstNets', 'saved_models')
+    
+    save_dir = os.path.join('/Users/jacekkaluzny/dev', 'saved_models')
     saveNow = 0
 
     directory = '/Users/jacekkaluzny/Pictures/trees5r'
 #    directorytrainb = '/Volumes/Flash⚡️ 1/trees5c/train'
     directorytrain = directory+'/train'
-    directorytest = directory+'/val'
+    directorytest = directory+'/testreal'
     directoryval = directory+'/val'
     
 
-    model_name = '5paramitertsR'
+    model_name = '5paramiterts'
     model = Sequential()
 
     stopTraining = False
