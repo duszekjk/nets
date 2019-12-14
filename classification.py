@@ -375,7 +375,6 @@ if not os.path.isdir(settings.save_dir):
 model_path = os.path.join(settings.save_dir, settings.model_name)
 
 settings.model = Sequential()
-
 settings.model.add(Conv2D(32, (3, 3), padding='same',input_shape=(320, 320, 3), name='conv2d_1'))
 #kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
 settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_1'))
@@ -383,35 +382,31 @@ settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_1'))
 
 settings.model.add(Conv2D(32, (3, 3), padding='same', name='conv2d_2'))
 settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_2'))
-settings.model.add(Conv2D(32, (3, 3), name='conv2d_3'))
-settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_3'))
 settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_2'))
 #    settings.model.add(Dropout(0.001))
 
 settings.model.add(Conv2D(32, (3, 3), padding='same', name='conv2d_4'))
 settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_4'))
-settings.model.add(Conv2D(32, (3, 3), name='conv2d_5'))
-settings.model.add(LeakyReLU(alpha=0.001, name='leaky_re_lu_5'))
 settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_3'))
-settings.model.add(Dropout(0.1))
+#settings.model.add(Dropout(0.3))
 #
 settings.model.add(Conv2D(64, (3, 3), padding='same', name='cconv2d_6'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_6'))
-settings.model.add(Conv2D(64, (3, 3), name='conv2d_7'))
-settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_7 '))
 settings.model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_4'))
-settings.model.add(Dropout(0.2))
 #
 
 settings.model.add(Flatten(name='flatten_1'))
-settings.model.add(Dense(4096, name='dense_1a'))
+settings.model.add(Dense(320, name='dense_1a'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12'))
 #
-settings.model.add(Dropout(0.4, name='dropout_last'))
+settings.model.add(Dropout(0.2, name='dropout_last'))
+
+settings.model.add(Dense(320, name='dense_1b'))
+settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12b'))
+settings.model.add(Dropout(0.2))
 
 settings.model.add(Dense(settings.num_classes, name='dense_1'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_13'))
-#    settings.model.add(Dropout(0.0005))
 settings.model.summary()
 
 # initiate RMSprop optimizer

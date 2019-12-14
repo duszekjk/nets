@@ -51,6 +51,8 @@ from PIL import Image
 
 labelsb = dict()
 labels = dict()
+labelsMin = dict()
+labelsMax = dict()
 
 imagesCombiner = dict()
 imagesBlocker = 0
@@ -131,20 +133,18 @@ def createBatch(data, SIZE=1000):
 
 def loadIMGS(paths):
     imagesL = dict()
-    illSum = max(int(len(paths)//340), 1)
-    #    print(illSum, int(len(paths)//100))
-    ill = 0
-#    print(np.unique(np.array(paths)))
     for name in paths:
-        ill += 1
-        if ill%illSum == 1:
-            continue
         filename = paths[name]
-#        print(str(ill/illSum), filename)
         image = load_img(filename, target_size=(320, 320))
         image = img_to_array(image)
+#            if(random.getrandbits(1)):
+#                image = np.flip(image, 1)
+#            if(random.getrandbits(1)):
+#                image = gaussian_filter(image, sigma=(3))
         # reshape data for the model
         image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
+#            if(random.getrandbits(1)):
+#                np.flip(image, 2)
         # prepare the image for the VGG model
         image = preprocess_input(image)
         imagesL[name] = image
@@ -163,11 +163,23 @@ def loadThisPhotoNames(directory, className, i):
 
     # load an image from file
     label = np.array(className.split(","))[1:-1].astype(float)
-    label[0] = (label[0]*5.0)-2.5  #ac
-    label[1] = (label[1]*2.0)-1.0
-    label[2] = (label[2]/3.0)
-    label[3] = (label[3]/102.0)-1.0 #max vigor
-    label[4] = (label[4]*3.34)-2.172 #determinism
+#    label[0] = (label[0]*5.0)-2.5  #ac
+#    label[1] = (label[1]*2.0)-1.0
+#    label[2] = (label[2]/3.0)
+#    label[3] = (label[3]/102.0)-1.0 #max vigor
+#    label[4] = (label[4]*3.34)-2.172 #determinism
+    label = [label[0], label[1], label[3], label[4], label[5], label[6], label[7], label[8], label[9], label[10], label[11], label[15], label[22], label[23], label[24], label[25], label[26], label[27], label[28], label[29], label[30], label[31]]
+    for iii in range(0, len(label)):
+        try:
+            if labelsMin[iii] > label[iii]:
+                labelsMin[iii] = label[iii]
+        except:
+            labelsMin[iii] = label[iii]
+        try:
+            if labelsMax[iii] < label[iii]:
+                labelsMax[iii] = label[iii]
+        except:
+            labelsMax[iii] = label[iii]
     labels[j] = label#[label[0], label[1], label[4]]
     images[j] = filename
 #    print(filename, label)
@@ -190,15 +202,12 @@ def loadPhotosNamesInCategory(directory, className, i):
         if name[0] != '.':
             # load an image from file
             filename = directory + '/' + className + '/' + name
-            #            classNameInt = int(className)
-            #            label = np.array([((classNameInt+30)%100)/100.0, ((((classNameInt)%1000000)//1000)/100.0)-1.0]).astype(float) #, (classNameInt//1000000)/1000.0]).astype(float)
-#            print(className)
             label = np.array(className.split("+")).astype(float)
-            label[0] = ((label[0]-0.25)*2.67)-1.0   #ac
-            label[1] = (label[1]*2.0)-1.0
-            label[2] = (label[2]/3.0)
-            label[3] = (label[3]/100.0)-1.0 #max vigor
-            label[4] = ((label[4]-0.3)*3.08)-1.54 #determinism
+#            label[0] = ((label[0]-0.25)*2.67)-1.0   #ac
+#            label[1] = (label[1]*2.0)-1.0
+#            label[2] = (label[2]/3.0)
+#            label[3] = (label[3]/100.0)-1.0 #max vigor
+#            label[4] = ((label[4]-0.3)*3.08)-1.54 #determinism
 #            print(label)
 #            label =  className#np.array([((classNameInt+30)%100)/100.0, (classNameInt//1000)/100.0]).astype(float)
             #            label = (label*2.0) - 1.0
@@ -206,13 +215,9 @@ def loadPhotosNamesInCategory(directory, className, i):
             labels[i*100000+j] = label#[label[0], label[1], label[4]]
             images[i*100000+j] = filename
             j += 1
-    #    while i != imagesBlocker:
-    #        time.sleep(0.001)
-#    print(len(imagesCombiner))
     imagesCombiner.update(images)
 #    print(len(imagesCombiner))
     imagesBlocker += 1
-    #    print("class end: \t", className, "\t",len(images))
 
 
 
@@ -242,8 +247,6 @@ def load_photos(directory, names = False, csv=""):
 #                print(className)
                 if names == True:
                     loadPhotosNamesInCategory(directory, className, i)
-#                    loadPhotosNamesInCategory(directory, className, i+1)
-#                    loadPhotosNamesInCategory(directory, className, i+2)
                 else:
                     threads.append(threading.Thread(target=loadPhotosInCategory, args=(directory, className, i)))
         i += 1
@@ -281,9 +284,14 @@ imagesCombiner.clear()
 #(imagesTrain, imagesTest) = chunks(images, int(len(images)*995/1000))
 imagesChunks =  createBatch(imagesTrain, 4*(int(settings.batch_size*1.25))+1)
 
+for iii in range(0, len(labels)):
+    for jjj in range(0, len(labels[iii])):
+        labels[iii][jjj] = (labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj])
+numberOfParameters = len(labels[0])
 
 
-print('Loaded Images: %d / %d' % (int(len(imagesTrain)), int(len(imagesTest))))
+print('Loaded Images: %d / %d' % (int(len(imagesTrain)), int(len(imagesTest))), '\tparameters: ', numberOfParameters)
+print(labels[0])
 
 # Generators
 #print(imagesTest)
@@ -292,7 +300,6 @@ validation_generator = DataGenerator(imagesTest, labels)
 if not os.path.isdir(settings.save_dir):
     os.makedirs(settings.save_dir)
 model_path = os.path.join(settings.save_dir, settings.model_name)
-#keras.callbacks.ModelCheckpoint(model_path, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
 
 epoch_start = 0
@@ -335,11 +342,11 @@ settings.model.add(Dense(320, name='dense_1b'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12b'))
 settings.model.add(Dropout(0.2))
 
-settings.model.add(Dense(settings.num_classes, name='dense_1'))
+settings.model.add(Dense(settings.num_classes*numberOfParameters, name='dense_1'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_13'))
 
 
-settings.model.add(Dense(5, name='dense_2'))
+settings.model.add(Dense(numberOfParameters, name='dense_2'))
 #                             , kernel_initializer=keras.initializers.RandomUniform(minval=-1.5, maxval=1.5, seed=random.randint(0, 1000000))))
 settings.model.add(Activation('linear')) 
 
@@ -355,8 +362,8 @@ opt = 'adam'#keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 
 #settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
 #settings.model.load_weights(settings.save_dir+"/"+"weights-improvement-5paramitertsR-43-0.04104.hdf5")
-print(os.system("ls -al \""+settings.save_dir+"\""))
-settings.model.load_weights(settings.save_dir+"/load.hdf5")
+#print(os.system("ls -al \""+settings.save_dir+"\""))
+#settings.model.load_weights(settings.save_dir+"/load.hdf5")
 
 
 #settings.model = multi_gpu_model(settings.model, gpus=2)
@@ -371,10 +378,10 @@ callbacks_list = [checkpoint, webpage]
 historyAvg = []
 
 
-#History = settings.model.fit_generator(generator=training_generator, steps_per_epoch=200,
-#                                      validation_data=validation_generator,
-#                                      use_multiprocessing=False,
-#                                      workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start, max_queue_size=100)
+History = settings.model.fit_generator(generator=training_generator, steps_per_epoch=500,
+                                      validation_data=validation_generator,
+                                      use_multiprocessing=False,
+                                      workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start, max_queue_size=100)
 
 #
 settings.model.save(model_path)
@@ -384,31 +391,38 @@ settings.model.save(model_path)
 stopTraining = True
 
 
-#imagesLoaded = loadIMGS(imagesTest)
-#(x_test, y_test) = np.array(list(imagesLoaded.values())).reshape(-1,512,512,3), np.array([labels[x] for x in list(imagesLoaded.keys())])
-#
-#x_test = x_test.astype('float32')
-#x_test /= 255.0
-#
-#scores = settings.model.evaluate(x_test, y_test, verbose=1)
-#print('Test loss:', scores[0])
-#print('Test accuracy:', scores[1])
-print("additional tests:")
+
+print("tests:")
 imagesCombiner.clear()
+j=0
+labels.clear()
+
+j_old = j
 listOfTests = load_photos(settings.directorytest, names = True, csv = settings.directorytest+"/classes.csv").copy()
 print('Loaded Images Test: %d' % int(len(listOfTests)))
 myTest = loadIMGS(listOfTests)
 print('Loaded Images Test: %d' % int(len(myTest)))
-(my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,320,320,3), np.array([labels[x] for x in list(myTest.keys())])
+print(list(myTest.keys()))
+for iii in range(0, len(labels)):
+    for jjj in range(0, len(labels[iii])):
+        labels[iii][jjj] = (labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj])
+        
+(my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,320,320,3), np.array([labels[x+j_old] for x in list(myTest.keys())])
 my_x_test = my_x_test.astype('float32')
 my_x_test /= 255.0
-#my_y_test = keras.utils.to_categorical(my_y_test)
+
+
+
+scores = settings.model.evaluate(my_x_test, my_y_test, verbose=1)
+print('Test '+settings.model.metrics_names[0]+':', scores[0])
+print('Test '+settings.model.metrics_names[2]+':', scores[2])
+print('Test '+settings.model.metrics_names[3]+':', scores[3])
 
 classes = settings.model.predict(my_x_test, batch_size=16)
 j = 0
 
 #print(classes)
-if len(classes[0]) == 5:
+if len(classes[0]) == numberOfParameters:
     
     arrayX = "["
     arrayY = "["
@@ -416,38 +430,27 @@ if len(classes[0]) == 5:
     arrayA = "["
     arrayB = "["
     arrayC = "["
-    for classesProbs in classes:
-        
-        trueA = round((my_y_test[j][0] + 2.5)/5.0, 6)
-        trueB = round((my_y_test[j][1] + 1.0)/2.0, 6)
-        trueC = round((my_y_test[j][2] * 3.0), 6)
-        trueD = round((my_y_test[j][3] + 1.0) * 102.0, 6)
-        trueE = round((my_y_test[j][4] + 2.172)/3.34, 6)
-        
-        predA = round((classesProbs[0] + 2.5)/5.0, 6)
-        predB = round((classesProbs[1] + 1.0)/2, 6)
-        predC = round((classesProbs[2] * 3.0), 6)
-        predD = round((classesProbs[3] + 1.0) * 102.0, 6)
-        predE = round((classesProbs[4] + 2.172)/3.34, 6)
-        
-#        print(my_y_test[j], classesProbs)
-        print("\ttrue:\t", trueA, trueB, trueC, trueD, trueE, "\tprediction:\t", predA, predB, predC, predD, predE, "\t = ", round(abs(trueA - predA), 2), round(abs(trueB - predB), 2), round(abs(trueC - predC), 2), round(abs(trueD - predD), 2), round(abs(trueE - predE), 2))
-        arrayX += str(predA)+", "
-        arrayY += str(predB)+", "
-        arrayA += str(predC)+", "
-        arrayB += str(predD)+", "
-        arrayC += str(predE)+", "
-        arrayZ += "\""+str(trueA)+"+"+str(trueB)+"+"+str(trueC)+"+"+str(trueD)+"+"+str(trueE)+"\""+", "
-        j += 1
-    
-    
-    #    print(prediction)
-    print(arrayX+"]")
-    print(arrayY+"]")
-    print(arrayA+"]")
-    print(arrayB+"]")
-    print(arrayC+"]")
-    print(arrayZ+"]")
+#    for classesProbs in classes:
+#
+#
+##        print(my_y_test[j], classesProbs)
+#        print("\ttrue:\t", trueA, trueB, trueC, trueD, trueE, "\tprediction:\t", predA, predB, predC, predD, predE, "\t = ", round(abs(trueA - predA), 2), round(abs(trueB - predB), 2), round(abs(trueC - predC), 2), round(abs(trueD - predD), 2), round(abs(trueE - predE), 2))
+#        arrayX += str(predA)+", "
+#        arrayY += str(predB)+", "
+#        arrayA += str(predC)+", "
+#        arrayB += str(predD)+", "
+#        arrayC += str(predE)+", "
+#        arrayZ += "\""+str(trueA)+"+"+str(trueB)+"+"+str(trueC)+"+"+str(trueD)+"+"+str(trueE)+"\""+", "
+#        j += 1
+#
+#
+#    #    print(prediction)
+#    print(arrayX+"]")
+#    print(arrayY+"]")
+#    print(arrayA+"]")
+#    print(arrayB+"]")
+#    print(arrayC+"]")
+#    print(arrayZ+"]")
 
 else:
     for classesProbs in classes:

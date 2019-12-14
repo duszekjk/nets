@@ -51,17 +51,6 @@ class DataGenerator(keras.utils.Sequence):
         
         return X, y
     def on_epoch_end(self, epoch=int(settings.saveNow), logs=None):
-#        if(logs != None):
-#            settings.historyAvg['mean_squared_error'] += logs['mean_squared_error']
-#            settings.historyAvg['val_mean_squared_error'] += logs['val_mean_squared_error']
-#            settings.historyAvg['mean_absolute_error'] += logs['mean_absolute_error']
-#            settings.historyAvg['val_mean_absolute_error'] += logs['val_mean_absolute_error']
-#            model_path = os.path.join(settings.save_dir, settings.model_name)
-#            with open(model_path+".json", 'w') as fp:
-#                json.dump(settings.historyAvg, fp)
-#            if(settings.shouldShowPlots == True):
-#                settings.showPlots()
-#                settings.shouldShowPlots = False
         'Updates indexes after each epoch'
         os.system("caffeinate -u -t 36000 &")
 #        settings.saveNow = epoch
