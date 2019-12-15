@@ -1,5 +1,5 @@
 # nets
-Tree analyzing nets
+## phd nets
 
 Copyright © 2019 Jacek Kałużny. All rights reserved. 
 
