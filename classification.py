@@ -86,17 +86,20 @@ def visualize_embeddings(data_path, model_path, model):
     img_files = listdir(path)
     for j in range(min(100, len(img_files))):
         if(img_files[j][0] != "." and img_files[j][-4:] != ".csv"):
-            img_path = path+img_files[j]
-            img = image.load_img(img_path, target_size=(320, 320))
-            x = image.img_to_array(img)
-            x = np.expand_dims(x, axis=0)
-            x = np.multiply(x, 1./255)
-            i = int(img_files[j][:2])
-            preds = feature_model.predict(x)[0]
-            features.append(preds)
-            labels.append(i)
+            try:
+                img_path = path+img_files[j]
+                img = image.load_img(img_path, target_size=(320, 320))
+                x = image.img_to_array(img)
+                x = np.expand_dims(x, axis=0)
+                x = np.multiply(x, 1./255)
+                i = int(img_files[j][:2])
+                preds = feature_model.predict(x)[0]
+                features.append(preds)
+                labels.append(i)
 
-            print(img_files[j], img_files[j][-8:-4])
+                print(img_files[j], img_files[j][-8:-4])
+            except:
+                print("error", img_path)
 
     tsne = manifold.TSNE(n_components=2, random_state=0)
     projected = tsne.fit_transform(features)
@@ -116,6 +119,38 @@ def visualize_embeddings(data_path, model_path, model):
     plt.savefig(vis_path + 'tsne.png')
     plt.savefig(vis_path + 'tsne.pdf')
 
+def visualize_embeddings_csv(csv_path):
+
+    features = []
+    labels = []
+    csv_file = open(csv_path, "r")
+    for line in csv_file:
+    
+        preds = [float(x) for x in line.split(', ')[1:]]
+        
+        i = int(line.split(', ')[-1])
+        features.append(preds)
+        labels.append(i)
+
+#        print(img_files[j], img_files[j][-8:-4])
+
+    tsne = manifold.TSNE(n_components=2, random_state=0)
+    projected = tsne.fit_transform(features)
+
+    x = projected[:, 0]
+    y = projected[:, 1]
+
+    colors = np.asarray(['black','blue','red','yellow', 'pink', 'green', 'orange', 'purple', 'gray', 'magenta', 'cyan'])
+    point_size = 10
+
+    vis_path = "/".join(csv_path.split("/")[:-2]) + '/vis/'
+
+    plt.clf()
+    plt.title('t-SNE')
+    plt.scatter(x, y, s=point_size, c=labels,
+    cmap=matplotlib.colors.ListedColormap(colors))
+    plt.savefig(vis_path + 'tsnecsv.png')
+    plt.savefig(vis_path + 'tsnecsv.pdf')
 
 
 
@@ -415,7 +450,9 @@ opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 
 
 
-#settings.model.load_weights("/Users/jacekkaluzny/Library/Mobile Documents/com~apple~CloudDocs/Studia/📕magisterka AIPD/nets/project/firstNets/saved_models/weights-improvement-5paramitertsR-03-0.9999.hdf5")
+settings.model.load_weights("/Users/jacekkaluzny/dev/saved_models/weights-improvement-9treesCM-04-0.9983.hdf5")
+
+
 
 
 settings.model.compile(loss='mean_squared_error',
@@ -428,13 +465,14 @@ checkpoint = ModelCheckpoint(filepath, monitor='categorical_accuracy', verbose=1
 webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
 callbacks_list = [checkpoint, webpage]
 
-History = settings.model.fit_generator(generator=training_generator,
-                    validation_data=validation_generator,
-                    use_multiprocessing=True,
-                    workers=6, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
+#History = settings.model.fit_generator(generator=training_generator,
+#                    validation_data=validation_generator,
+#                    use_multiprocessing=True,
+#                    workers=6, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
 
 settings.model.save(model_path)
 visualize_embeddings(settings.directory, model_path, settings.model)
+visualize_embeddings_csv(settings.directorytest + "/classes.csv")
 
 stopTraining = True
 

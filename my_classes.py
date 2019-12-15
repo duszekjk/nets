@@ -77,19 +77,22 @@ class DataGenerator(keras.utils.Sequence):
         imagesL = dict()
         for name in paths:
             filename = paths[name]
-            image = load_img(filename, target_size=(320, 320))
-            image = img_to_array(image)
-#            if(random.getrandbits(1)):
-#                image = np.flip(image, 1)
-#            if(random.getrandbits(1)):
-#                image = gaussian_filter(image, sigma=(3))
-            # reshape data for the model
-            image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-#            if(random.getrandbits(1)):
-#                np.flip(image, 2)
-            # prepare the image for the VGG model
-            image = preprocess_input(image)
-            imagesL[name] = image
+            try:
+                image = load_img(filename, target_size=(320, 320))
+                image = img_to_array(image)
+    #            if(random.getrandbits(1)):
+    #                image = np.flip(image, 1)
+    #            if(random.getrandbits(1)):
+    #                image = gaussian_filter(image, sigma=(3))
+                # reshape data for the model
+                image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
+    #            if(random.getrandbits(1)):
+    #                np.flip(image, 2)
+                # prepare the image for the VGG model
+                image = preprocess_input(image)
+                imagesL[name] = image
+            except:
+                print(filename, "doesn't exist")
         return imagesL
     
     def createBatch(data, SIZE=1000):

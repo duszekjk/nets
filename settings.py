@@ -31,7 +31,7 @@ def init():
     labelnr = dict()
     batch_size = 16
     num_classes = 9#len(listdir(directory))
-    epochs = 4
+    epochs = 140
     data_augmentation = False
 
 

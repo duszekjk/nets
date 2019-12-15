@@ -53,6 +53,7 @@ labelsb = dict()
 labels = dict()
 labelsMin = dict()
 labelsMax = dict()
+labelsAvg = dict()
 
 imagesCombiner = dict()
 imagesBlocker = 0
@@ -162,13 +163,14 @@ def loadThisPhotoNames(directory, className, i):
     filename = directory + '/' + photoData[0] + ".jpg"
 
     # load an image from file
-    label = np.array(className.split(","))[1:-1].astype(float)
+    label = np.array(className.split(","))[1:].astype(float)
 #    label[0] = (label[0]*5.0)-2.5  #ac
 #    label[1] = (label[1]*2.0)-1.0
 #    label[2] = (label[2]/3.0)
 #    label[3] = (label[3]/102.0)-1.0 #max vigor
 #    label[4] = (label[4]*3.34)-2.172 #determinism
-    label = [label[0], label[1], label[3], label[4], label[5], label[6], label[7], label[8], label[9], label[10], label[11], label[15], label[22], label[23], label[24], label[25], label[26], label[27], label[28], label[29], label[30], label[31]]
+    label = [label[0], label[1], label[2], label[3], label[4], label[5], label[6], label[7], label[8], label[9], label[10], label[11], label[12], label[13], label[17], label[24], label[25], label[26], label[27], label[28], label[29], label[30], label[31], label[33], label[-1]]
+#    print(label)
     for iii in range(0, len(label)):
         try:
             if labelsMin[iii] > label[iii]:
@@ -180,6 +182,10 @@ def loadThisPhotoNames(directory, className, i):
                 labelsMax[iii] = label[iii]
         except:
             labelsMax[iii] = label[iii]
+        try:
+            labelsAvg[iii] = labelsAvg*(iiii)+label[iii]/(iiii+1)
+        except:
+            labelsAvg[iii] = label[iii]
     labels[j] = label#[label[0], label[1], label[4]]
     images[j] = filename
 #    print(filename, label)
@@ -286,9 +292,9 @@ imagesChunks =  createBatch(imagesTrain, 4*(int(settings.batch_size*1.25))+1)
 
 for iii in range(0, len(labels)):
     for jjj in range(0, len(labels[iii])):
-        labels[iii][jjj] = (labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj])
+        labels[iii][jjj] = ((labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj]))*2.0 - 1.0
 numberOfParameters = len(labels[0])
-
+print(labels[0])
 
 print('Loaded Images: %d / %d' % (int(len(imagesTrain)), int(len(imagesTest))), '\tparameters: ', numberOfParameters)
 print(labels[0])
@@ -378,7 +384,7 @@ callbacks_list = [checkpoint, webpage]
 historyAvg = []
 
 
-History = settings.model.fit_generator(generator=training_generator, steps_per_epoch=500,
+History = settings.model.fit_generator(generator=training_generator, steps_per_epoch=600,
                                       validation_data=validation_generator,
                                       use_multiprocessing=False,
                                       workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start, max_queue_size=100)
@@ -405,7 +411,7 @@ print('Loaded Images Test: %d' % int(len(myTest)))
 print(list(myTest.keys()))
 for iii in range(0, len(labels)):
     for jjj in range(0, len(labels[iii])):
-        labels[iii][jjj] = (labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj])
+        labels[iii][jjj] = ((labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj])) * 2.0 - 1.0
         
 (my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,320,320,3), np.array([labels[x+j_old] for x in list(myTest.keys())])
 my_x_test = my_x_test.astype('float32')
@@ -413,7 +419,7 @@ my_x_test /= 255.0
 
 
 
-scores = settings.model.evaluate(my_x_test, my_y_test, verbose=1)
+scores = settings.model.evaluate(my_x_test[:-13], my_y_test[:-13], verbose=1)
 print('Test '+settings.model.metrics_names[0]+':', scores[0])
 print('Test '+settings.model.metrics_names[2]+':', scores[2])
 print('Test '+settings.model.metrics_names[3]+':', scores[3])
@@ -424,33 +430,30 @@ j = 0
 #print(classes)
 if len(classes[0]) == numberOfParameters:
     
-    arrayX = "["
-    arrayY = "["
-    arrayZ = "["
-    arrayA = "["
-    arrayB = "["
-    arrayC = "["
-#    for classesProbs in classes:
-#
-#
-##        print(my_y_test[j], classesProbs)
-#        print("\ttrue:\t", trueA, trueB, trueC, trueD, trueE, "\tprediction:\t", predA, predB, predC, predD, predE, "\t = ", round(abs(trueA - predA), 2), round(abs(trueB - predB), 2), round(abs(trueC - predC), 2), round(abs(trueD - predD), 2), round(abs(trueE - predE), 2))
-#        arrayX += str(predA)+", "
-#        arrayY += str(predB)+", "
-#        arrayA += str(predC)+", "
-#        arrayB += str(predD)+", "
-#        arrayC += str(predE)+", "
-#        arrayZ += "\""+str(trueA)+"+"+str(trueB)+"+"+str(trueC)+"+"+str(trueD)+"+"+str(trueE)+"\""+", "
-#        j += 1
-#
-#
-#    #    print(prediction)
-#    print(arrayX+"]")
-#    print(arrayY+"]")
-#    print(arrayA+"]")
-#    print(arrayB+"]")
-#    print(arrayC+"]")
-#    print(arrayZ+"]")
+    arrayR = []
+    for param in labelsMin:
+        arrayR.append("[")
+    arrayS = "["
+    jjjj = 0
+    for classesProbs in classes:
+        iiii = 0
+        arrayS += "\""
+        for param in classesProbs:
+            arrayR[iiii] += str(round((labelsMax[iiii]-labelsMin[iiii])*min(max(param, 0),1)+labelsMin[iiii], 6))+", "
+            iiii += 1
+#        for description in my_y_test[jjjj]:
+        arrayS += str(listOfTests[jjjj].split("/")[-1])+"+"
+        arrayS = arrayS[:-1] + "\", "
+        jjjj += 1
+    
+    iiii = 0
+    for param in labelsMin:
+        arrayR[iiii] += "],"
+        iiii += 1
+    arrayS += "]"
+    for tree in arrayR:
+        print(tree)
+    print(arrayS)
 
 else:
     for classesProbs in classes:
