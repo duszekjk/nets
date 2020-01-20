@@ -15,8 +15,10 @@ import keras.applications as kapp
 from keras.models import load_model
 from os.path import isfile, join
 import json
+from PIL import Image
 import random
 from scipy.ndimage.filters import gaussian_filter
+#from scipy import misc
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -80,19 +82,56 @@ class DataGenerator(keras.utils.Sequence):
             try:
                 image = load_img(filename, target_size=(320, 320))
                 image = img_to_array(image)
-    #            if(random.getrandbits(1)):
-    #                image = np.flip(image, 1)
-    #            if(random.getrandbits(1)):
-    #                image = gaussian_filter(image, sigma=(3))
-                # reshape data for the model
+#                imageold = image
+#                if(random.getrandbits(1)):
+#                    if(random.getrandbits(1)):
+#                        image = np.flip(image, 1)
+                fil = ""
+                if(random.getrandbits(1)):
+                    if(random.getrandbits(1)):
+    #                    print("\nin", image[50, 50, :])
+                        fil+="_nb"
+                        noise = np.random.normal(0, 0.5, (320, 320, 3)).astype(np.uint8).astype('float32')
+                        image = np.clip(image+noise, 0.0, 255.0)
+                    fil+="_bl"
+#                    print("\nin", image[50:52, 50, :])
+                    image = gaussian_filter(image, sigma=(random.randint(1, 2))).astype(np.uint8).astype('float32')
+#                    print("out", image[50:52, 50, :])
+                if(random.getrandbits(1)):
+#                    print("\nin", image[50, 50, :])
+                    fil+="_n"
+                    noise = np.random.normal(0, 0.3, (320, 320, 3)).astype(np.uint8).astype('float32')
+                    image = np.clip(image+noise, 0.0, 255.0)
+#                    print("out", image[50, 50, :])
+                if(random.getrandbits(1)):
+                    factor = float(random.randint(950, 1300))/1000.0
+                    fil+="_c"+str(factor)
+#                    print("\nin", image[50:55, 50, :], "f", factor)
+                    image = np.clip(128.0 + factor * image - factor * 128.0, 0.0, 255.0).astype(np.uint8).astype('float32')
+#                    print("out", image[50:55, 50, :])
+#                    plt.imshow(image, cmap=plt.cm.gray, vmin=0, vmax=1)
+                if(random.getrandbits(1)):
+                    factor = float(random.randint(-20, 20))
+                    fil+="_br"+str(factor)
+#                    print("\nin", image[50:55, 50, :], "f", factor)
+                    image = np.clip(image+factor, 0.0, 255.0).astype(np.uint8).astype('float32')
+#                    print("out", image[50:55, 50, :])
+#                    plt.imshow(image, cmap=plt.cm.gray, vmin=1, vmax=1)
+#                # reshape data for the model
+
+#                imgprev.show()
                 image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
     #            if(random.getrandbits(1)):
     #                np.flip(image, 2)
                 # prepare the image for the VGG model
-                image = preprocess_input(image)
+                    
+#                imgprev = Image.fromarray(image[0, :, :, :].astype(np.uint8), 'RGB')
+#                imgprev.save('/Users/jacekkaluzny/Pictures/aug/a'+fil+'a'+str(random.randint(10000, 99999))+'.png')
+                image = preprocess_input(image.astype('float32'))
                 imagesL[name] = image
             except:
                 print(filename, "doesn't exist")
+            
         return imagesL
     
     def createBatch(data, SIZE=1000):

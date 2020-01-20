@@ -172,6 +172,9 @@ def loadThisPhotoNames(directory, className, i):
     label = [label[0], label[1], label[2], label[3], label[4], label[5], label[6], label[7], label[8], label[9], label[10], label[11], label[12], label[13], label[17], label[24], label[25], label[26], label[27], label[28], label[29], label[30], label[31], label[33], label[-1]]
 #    print(label)
     for iii in range(0, len(label)):
+        if str(label[iii]) == "nan":
+            print("usunieto", label)
+            return
         try:
             if labelsMin[iii] > label[iii]:
                 labelsMin[iii] = label[iii]
@@ -186,10 +189,41 @@ def loadThisPhotoNames(directory, className, i):
             labelsAvg[iii] = labelsAvg*(iiii)+label[iii]/(iiii+1)
         except:
             labelsAvg[iii] = label[iii]
-    labels[j] = label#[label[0], label[1], label[4]]
-    images[j] = filename
+            
+    
+    if (isfile(filename)):
+        labels[j] = label
+        images[j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_a.jpg"
+    if (isfile(filename)):
+        labels[j] = label
+        images[j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_b.jpg"
+    if (isfile(filename)):
+        labels[j] = label
+        images[j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_c.jpg"
+    if (isfile(filename)):
+        labels[j] = label
+        images[j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_d.jpg"
+    if (isfile(filename)):
+        labels[j] = label
+        images[j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_e.jpg"
+    if (isfile(filename)):
+        labels[j] = label
+        images[j] = filename
+        j += 1
+#    labels[j] = label#[label[0], label[1], label[4]]
+#    images[j] = filename
 #    print(filename, label)
-    j += 1
+#    j += 1
     imagesCombiner.update(images)
     imagesBlocker += 1
 #    print("class end: \t", className, "\t",len(images))
@@ -290,14 +324,31 @@ imagesCombiner.clear()
 #(imagesTrain, imagesTest) = chunks(images, int(len(images)*995/1000))
 imagesChunks =  createBatch(imagesTrain, 4*(int(settings.batch_size*1.25))+1)
 
+print(labelsMin[0], labelsMax[0])
+
+for jjj in range(0, len(labelsMin)):
+    if labelsMin[jjj] == labelsMax[jjj]:
+        labelsMin[jjj] -= 1.0
+        labelsMax[jjj] += 1.0001
 for iii in range(0, len(labels)):
     for jjj in range(0, len(labels[iii])):
         labels[iii][jjj] = ((labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj]))*2.0 - 1.0
+
+#print(len(labels[0]), len(labelsMax), len(labelsMin))
+#print("max: ",labelsMax.values())
+#print("min: ",labelsMin.values())
+
+# 0.7
+# 0.3
+# 1.0
+# 0.57
+# 0.14
+
 numberOfParameters = len(labels[0])
 print(labels[0])
 
 print('Loaded Images: %d / %d' % (int(len(imagesTrain)), int(len(imagesTest))), '\tparameters: ', numberOfParameters)
-print(labels[0])
+#print(labels[0])
 
 # Generators
 #print(imagesTest)
@@ -367,9 +418,9 @@ opt = 'adam'#keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 
 
 #settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
-#settings.model.load_weights(settings.save_dir+"/"+"weights-improvement-5paramitertsR-43-0.04104.hdf5")
+settings.model.load_weights(settings.save_dir+"/"+"loadau.hdf5")
 #print(os.system("ls -al \""+settings.save_dir+"\""))
-#settings.model.load_weights(settings.save_dir+"/load.hdf5")
+#settings.model.load_weights(settings.save_dir+"/loadnew.hdf5")
 
 
 #settings.model = multi_gpu_model(settings.model, gpus=2)
@@ -383,82 +434,111 @@ webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
 callbacks_list = [checkpoint, webpage]
 historyAvg = []
 
+#steps_per_epoch=1200,
+print("1 train\n2 test")
+traintestmode = input()
+if "2" not in traintestmode:
+    History = settings.model.fit_generator(generator=training_generator,
+                                          validation_data=validation_generator,
+                                          use_multiprocessing=False,
+                                          workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start, max_queue_size=100)
 
-History = settings.model.fit_generator(generator=training_generator, steps_per_epoch=600,
-                                      validation_data=validation_generator,
-                                      use_multiprocessing=False,
-                                      workers=1, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start, max_queue_size=100)
-
-#
-settings.model.save(model_path)
-
-
-
-stopTraining = True
-
-
-
-print("tests:")
-imagesCombiner.clear()
-j=0
-labels.clear()
-
-j_old = j
-listOfTests = load_photos(settings.directorytest, names = True, csv = settings.directorytest+"/classes.csv").copy()
-print('Loaded Images Test: %d' % int(len(listOfTests)))
-myTest = loadIMGS(listOfTests)
-print('Loaded Images Test: %d' % int(len(myTest)))
-print(list(myTest.keys()))
-for iii in range(0, len(labels)):
-    for jjj in range(0, len(labels[iii])):
-        labels[iii][jjj] = ((labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj])) * 2.0 - 1.0
-        
-(my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,320,320,3), np.array([labels[x+j_old] for x in list(myTest.keys())])
-my_x_test = my_x_test.astype('float32')
-my_x_test /= 255.0
-
-
-
-scores = settings.model.evaluate(my_x_test[:-13], my_y_test[:-13], verbose=1)
-print('Test '+settings.model.metrics_names[0]+':', scores[0])
-print('Test '+settings.model.metrics_names[2]+':', scores[2])
-print('Test '+settings.model.metrics_names[3]+':', scores[3])
-
-classes = settings.model.predict(my_x_test, batch_size=16)
-j = 0
-
-#print(classes)
-if len(classes[0]) == numberOfParameters:
-    
-    arrayR = []
-    for param in labelsMin:
-        arrayR.append("[")
-    arrayS = "["
-    jjjj = 0
-    for classesProbs in classes:
-        iiii = 0
-        arrayS += "\""
-        for param in classesProbs:
-            arrayR[iiii] += str(round((labelsMax[iiii]-labelsMin[iiii])*min(max(param, 0),1)+labelsMin[iiii], 6))+", "
-            iiii += 1
-#        for description in my_y_test[jjjj]:
-        arrayS += str(listOfTests[jjjj].split("/")[-1])+"+"
-        arrayS = arrayS[:-1] + "\", "
-        jjjj += 1
-    
-    iiii = 0
-    for param in labelsMin:
-        arrayR[iiii] += "],"
-        iiii += 1
-    arrayS += "]"
-    for tree in arrayR:
-        print(tree)
-    print(arrayS)
-
+    #
+    settings.model.save(model_path)
+    stopTraining = True
 else:
-    for classesProbs in classes:
-        print(labelsb[np.argmax(my_y_test[j])], labelsb[np.argmax(classesProbs)])
-        j += 1
 
 
-#    print(prediction)
+    stopTraining = True
+
+
+
+    print("tests:")
+    imagesCombiner.clear()
+    j=0
+    labels.clear()
+
+    j_old = j
+    listOfTests = load_photos(settings.directorytest, names = True, csv = settings.directorytest+"/classes.csv").copy()
+    print('Loaded Images Test: %d' % int(len(listOfTests)))
+    myTest = loadIMGS(listOfTests)
+    print('Loaded Images Test: %d' % int(len(myTest)))
+    for iii in range(0, len(labels)):
+        for jjj in range(0, len(labels[iii])):
+            labels[iii][jjj] = ((labels[iii][jjj] - labelsMin[jjj]) / (labelsMax[jjj] - labelsMin[jjj])) * 2.0 - 1.0
+    #print(labels)
+    (my_x_test, my_y_test) = np.array(list(myTest.values())).reshape(-1,320,320,3), np.array([labels[x+j_old] for x in list(labels)])
+    my_x_test = my_x_test.astype('float32')
+    my_x_test /= 255.0
+
+
+
+    scores = settings.model.evaluate(my_x_test[:-13], my_y_test[:-13], verbose=1)
+    print('Test '+settings.model.metrics_names[0]+':', scores[0])
+    print('Test '+settings.model.metrics_names[2]+':', scores[2])
+    print('Test '+settings.model.metrics_names[3]+':', scores[3])
+
+    classes = settings.model.predict(my_x_test, batch_size=16)
+    j = 0
+
+    #print(classes)
+    if len(classes[0]) == numberOfParameters:
+        errors = []
+        arrayR = []
+        for param in range(0,35):
+            arrayR.append("[")
+        arrayS = "["
+        jjjj = 0
+        for classesProbs in classes:
+    #        if jjjj == 0 or jjjj == 15 or jjjj == 29 or jjjj == 34:
+            iiii = 0
+            iiiib = 0
+            arrayS += "\""
+            for param in classesProbs:
+                if iiiib == 14:
+                    arrayR[iiiib] += "4.0, "
+                    iiiib += 1
+                while iiiib == 15 or iiiib == 16:
+                    arrayR[iiiib] += "0.1, "
+                
+                    iiiib += 1
+                while (iiiib >= 18 and iiiib <= 23) or iiiib == 32:
+                    arrayR[iiiib] += "1.0, "
+                
+                    iiiib += 1
+    #            errors.append((param - labels[jjjj][iiii])**2)
+    #            print((param - labels[jjjj][iiii])**2, ", ")
+                arrayR[iiiib] += str(round((labelsMax[iiii]-labelsMin[iiii])*((1.0 + min(max(param, -1.0),1.0))/2.0)+labelsMin[iiii], 6))+", "
+    #            aaa = (param - labels[jjjj][iiii])**2 #((round((labelsMax[iiii]-labelsMin[iiii])*((1.0 + min(max(param, -1.0),1.0))/2.0)+labelsMin[iiii], 6) - round((labelsMax[iiii]-labelsMin[iiii])*((1.0 + labels[jjjj][iiii])/2.0)+labelsMin[iiii], 6)))**2
+    #                if aaa > 0.011:
+    #                    print(jjjj)
+    #            errors.append(((round((labelsMax[iiii]-labelsMin[iiii])*((1.0 + min(max(param, -1.0),1.0))/2.0)+labelsMin[iiii], 6) - round((labelsMax[iiii]-labelsMin[iiii])*((1.0 + labels[jjjj][iiii])/2.0)+labelsMin[iiii], 6)))**2)
+                iiii += 1
+                iiiib += 1
+        #        for description in my_y_test[jjjj]:
+                 
+            arrayS += str(listOfTests[jjjj].split("/")[-1])+"+"
+            arrayS = arrayS[:-1] + "\", "
+            jjjj += 1
+        
+        iiii = 0
+        for param in range(0,35):
+            arrayR[iiii] += "],"
+            iiii += 1
+        arrayS += "]"
+        iiii = 0
+        for tree in arrayR:
+            print(tree)
+            iiii += 1
+        print(arrayS)
+        errors.sort()
+    #    print(errors)
+        
+
+    else:
+        for classesProbs in classes:
+            print(labelsb[np.argmax(my_y_test[j])], labelsb[np.argmax(classesProbs)])
+            j += 1
+
+
+    #    print(prediction)

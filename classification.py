@@ -153,54 +153,6 @@ def visualize_embeddings_csv(csv_path):
     plt.savefig(vis_path + 'tsnecsv.pdf')
 
 
-
-def showPlots():
-    global historyAvg
-    print("plots:")
-    plt.plot(list( map(add, historyAvg['mean_squared_error'][3:], historyAvg['val_mean_squared_error'][3:])))
-    plt.title('model loss')
-    plt.ylabel('mean squared error')
-    plt.xlabel('epoch')
-    plt.legend(['train + test'], loc='upper left')
-    plt.show()
-    plt.plot(list( map(add, historyAvg['mean_absolute_error'][3:], historyAvg['val_mean_absolute_error'][3:])))
-    plt.title('model mean absolute error')
-    plt.ylabel('mean absolute error')
-    plt.xlabel('epoch')
-    plt.legend(['train + test'], loc='upper left')
-    plt.show()
-    
-    plt.plot(historyAvg['mean_squared_error'][3:])
-    plt.plot(historyAvg['val_mean_squared_error'][3:])
-    plt.title('model loss')
-    plt.ylabel('mean squared error')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    plt.plot(historyAvg['mean_absolute_error'][3:])
-    plt.plot(historyAvg['val_mean_absolute_error'][3:])
-    plt.title('model mean absolute error')
-    plt.ylabel('mean absolute error')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-
-    plt.plot(history['mean_squared_error'][3:])
-    plt.plot(history['val_mean_squared_error'][3:])
-    plt.title('model loss')
-    plt.ylabel('mean squared error')
-    plt.xlabel('batches')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    plt.plot(history['mean_absolute_error'][3:])
-    plt.plot(history['val_mean_absolute_error'][3:])
-    plt.title('model mean absolute error')
-    plt.ylabel('mean absolute error')
-    plt.xlabel('batches')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-
-
 def chunks(data, SIZE=10000):
     it = iter(data)
     for i in range(0, len(data), SIZE):
@@ -256,9 +208,26 @@ def loadThisPhotoNames(directory, className, i):
     label = [0]*(settings.num_classes)
     label[settings.labelnr[photoData[-1]]] = 1
     labelsb[settings.labelnr[photoData[-1]]] =  photoData[-1]
-    labels[i*10000000+j] = label
-    images[i*10000000+j] = filename
-    j += 1
+    
+    if (isfile(filename)):
+        labels[i*10000000+j] = label
+        images[i*10000000+j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_a.jpg"
+    if (isfile(filename)):
+        labels[i*10000000+j] = label
+        images[i*10000000+j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_b.jpg"
+    if (isfile(filename)):
+        labels[i*10000000+j] = label
+        images[i*10000000+j] = filename
+        j += 1
+    filename = directory + '/' + photoData[0] + "_with_bg_c.jpg"
+    if (isfile(filename)):
+        labels[i*10000000+j] = label
+        images[i*10000000+j] = filename
+        j += 1
     #    while i != imagesBlocker:
     #        time.sleep(0.001)
 #    print("+", j)
@@ -450,7 +419,7 @@ opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 
 
 
-settings.model.load_weights("/Users/jacekkaluzny/dev/saved_models/weights-improvement-9treesCM-04-0.9983.hdf5")
+#settings.model.load_weights("/Users/jacekkaluzny/dev/saved_models/weights-improvement-9treesCM-04-0.9983.hdf5")
 
 
 
@@ -465,10 +434,10 @@ checkpoint = ModelCheckpoint(filepath, monitor='categorical_accuracy', verbose=1
 webpage = RemoteMonitor(root='http://trees.duszekjk.com', path='/liveupdates/')
 callbacks_list = [checkpoint, webpage]
 
-#History = settings.model.fit_generator(generator=training_generator,
-#                    validation_data=validation_generator,
-#                    use_multiprocessing=True,
-#                    workers=6, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
+History = settings.model.fit_generator(generator=training_generator,
+                    validation_data=validation_generator,
+                    use_multiprocessing=True,
+                    workers=6, epochs=settings.epochs, verbose = 1, callbacks=callbacks_list, initial_epoch = epoch_start)
 
 settings.model.save(model_path)
 visualize_embeddings(settings.directory, model_path, settings.model)
