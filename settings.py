@@ -29,9 +29,9 @@ def init():
     global labelnr
     
     labelnr = dict()
-    batch_size = 16
+    batch_size = 32
     num_classes = 14#len(listdir(directory))
-    epochs = 20
+    epochs = 50
     data_augmentation = False
 
 
@@ -40,14 +40,14 @@ def init():
     save_dir = os.path.join('/Users/jacekkaluzny/dev', 'saved_models')
     saveNow = 0
 
-    directory = '/Users/jacekkaluzny/Pictures/trees14/bg'
+    directory = '/Users/jacekkaluzny/Pictures/sorenxtree'
 #    directorytrainb = '/Volumes/Flash⚡️ 1/trees5c/train'
     directorytrain = directory+'/train'
     directorytest = directory+'/test'
     directoryval = directory+'/val'
     
 
-    model_name = '12trees'
+    model_name = directory.split("/")[-1]
     model = Sequential()
 
     stopTraining = False

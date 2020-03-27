@@ -393,11 +393,11 @@ settings.model.add(Flatten(name='flatten_1'))
 settings.model.add(Dense(320, name='dense_1a'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12'))
 #
-settings.model.add(Dropout(0.2, name='dropout_last'))
+settings.model.add(Dropout(0.4, name='dropout_last'))
 
 settings.model.add(Dense(320, name='dense_1b'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_12b'))
-settings.model.add(Dropout(0.2))
+settings.model.add(Dropout(0.4))
 
 settings.model.add(Dense(settings.num_classes*numberOfParameters, name='dense_1'))
 settings.model.add(LeakyReLU(alpha=0.01, name='leaky_re_lu_13'))
@@ -417,10 +417,16 @@ settings.model.summary()
 opt = 'adam'#keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 
 
+print("1 train\n2 test")
+traintestmode = input()
+
+if "1" not in traintestmode:
 #settings.model.load_weights(settings.save_dir+"/"+settings.model_name)
-settings.model.load_weights(settings.save_dir+"/"+"loadau.hdf5")
+#    settings.model.load_weights(settings.save_dir+"/"+"weights-improvement-maskR-43-0.00785.hdf5")
 #print(os.system("ls -al \""+settings.save_dir+"\""))
-#settings.model.load_weights(settings.save_dir+"/loadnew.hdf5")
+    settings.model.load_weights(settings.save_dir+"/load.hdf5")
+#    settings.model.load_weights(settings.save_dir+"/12treesR")
+    print("model loaded")
 
 
 #settings.model = multi_gpu_model(settings.model, gpus=2)
@@ -435,8 +441,8 @@ callbacks_list = [checkpoint, webpage]
 historyAvg = []
 
 #steps_per_epoch=1200,
-print("1 train\n2 test")
-traintestmode = input()
+#print("1 train\n2 test")
+#traintestmode = input()
 if "2" not in traintestmode:
     History = settings.model.fit_generator(generator=training_generator,
                                           validation_data=validation_generator,
@@ -474,6 +480,8 @@ else:
 
 
     scores = settings.model.evaluate(my_x_test[:-13], my_y_test[:-13], verbose=1)
+    if(len(scores)<3):
+        scores = settings.model.evaluate(my_x_test[:-1], my_y_test[:-1], verbose=1)
     print('Test '+settings.model.metrics_names[0]+':', scores[0])
     print('Test '+settings.model.metrics_names[2]+':', scores[2])
     print('Test '+settings.model.metrics_names[3]+':', scores[3])
